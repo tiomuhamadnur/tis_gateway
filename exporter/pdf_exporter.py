@@ -25,7 +25,7 @@ from reportlab.platypus import (
 )
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 
-from parser.record_parser import FailureRecord
+from parsers.record_parser import FailureRecord
 from config.settings import config
 from utils.logger import get_logger
 

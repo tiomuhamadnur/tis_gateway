@@ -19,8 +19,8 @@ from protocol.commands import (
     build_dataset_b_request,
     build_failure_poll,
 )
-from parser.response_parser import ResponseParser, ParsedPacket, CMD_HEARTBEAT, CMD_FAILURE
-from parser.record_parser import RecordParser, FailureRecord
+from parsers.response_parser import ResponseParser, ParsedPacket, CMD_HEARTBEAT, CMD_FAILURE
+from parsers.record_parser import RecordParser, FailureRecord
 from config.settings import config
 from utils.logger import get_logger
 

@@ -14,7 +14,7 @@ from typing import List, Optional, Dict, Any
 import urllib.request
 import urllib.error
 
-from parser.record_parser import FailureRecord
+from parsers.record_parser import FailureRecord
 from config.settings import config
 from utils.logger import get_logger
 

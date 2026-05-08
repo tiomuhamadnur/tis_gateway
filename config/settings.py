@@ -16,7 +16,7 @@ import os
 @dataclass
 class NetworkConfig:
     # IP CCU/MON Unit (TIS)
-    tis_host: str = "192.168.1.1"
+    tis_host: str = "127.0.0.1"
 
     # Port TIS mengirim data
     tis_port: int = 262
@@ -168,18 +168,24 @@ config = GatewayConfig()
 # ─────────────────────────────────────────────
 def load_from_env():
     """Override config dari environment variable jika ada."""
-    if val := os.getenv("TIS_HOST"):
+    val = os.getenv("TIS_HOST")
+    if val:
         config.network.tis_host = val
-    if val := os.getenv("TIS_PORT"):
+    val = os.getenv("TIS_PORT")
+    if val:
         config.network.tis_port = int(val)
-    if val := os.getenv("LOCAL_PORT"):
+    val = os.getenv("LOCAL_PORT")
+    if val:
         config.network.local_port = int(val)
-    if val := os.getenv("OUTPUT_DIR"):
+    val = os.getenv("OUTPUT_DIR")
+    if val:
         config.output.output_dir = val
-    if val := os.getenv("CLOUD_API_URL"):
+    val = os.getenv("CLOUD_API_URL")
+    if val:
         config.cloud.api_base_url = val
         config.cloud.enabled = True
-    if val := os.getenv("LOG_LEVEL"):
+    val = os.getenv("LOG_LEVEL")
+    if val:
         config.log.level = val
 
 

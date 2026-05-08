@@ -23,7 +23,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional, List
 
-from parser.bcd import decode_timestamp, is_valid_timestamp
+from parsers.bcd import decode_timestamp, is_valid_timestamp
 from config.equipment_map import (
     get_equipment_name, get_fault_name,
     get_car_number, get_notch_label

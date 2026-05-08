@@ -10,9 +10,9 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from datetime import datetime
-from parser.bcd import bcd_byte, decode_timestamp
-from parser.record_parser import RecordParser
-from parser.response_parser import ResponseParser
+from parsers.bcd import bcd_byte, decode_timestamp
+from parsers.record_parser import RecordParser
+from parsers.response_parser import ResponseParser
 
 
 # ─────────────────────────────────────────────
