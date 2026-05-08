@@ -79,7 +79,7 @@ python main.py --rake-id 5 --host 127.0.0.1
 tis_gateway/
 ├── config/
 │   ├── settings.py          # Semua konfigurasi terpusat (IP, port, timeout, dll)
-│   └── equipment_map.py     # Mapping kode equipment & fault code → nama
+│   └── equipment_map.py     # 125+ fault codes dengan deskripsi, guidance, & klasifikasi
 │
 ├── protocol/
 │   ├── udp_client.py        # Low-level UDP socket handler
@@ -190,11 +190,26 @@ Log akan ditulis ke:
 ```
 1. Handshake  (CMD 0x20)  — 1x
 2. Metadata   (CMD 0x32)  — 6 pages
-3. Data Set B (CMD 0x34)  — 6 pages  
+3. Data Set B (CMD 0x34)  — 6 pages
 4. Failure    (CMD 0x36)  — 40 pages × 5 records = 200 records
 5. Export     → CSV + PDF
 6. Upload     → Cloud API
 ```
+
+## Equipment & Fault Map
+
+`config/equipment_map.py` mendecode semua field dari raw packet:
+
+| Helper | Input | Output |
+|--------|-------|--------|
+| `get_fault_abbrev(fault_code)` | int | Abbreviation, e.g. `"ESA"` |
+| `get_fault_description(fault_code)` | int | Deskripsi lengkap |
+| `get_fault_classification(fault_code)` | int | `"Heavy"` / `"Light"` |
+| `get_failure_guidance(fault_code)` | int | Instruksi penanganan |
+| `get_equipment_by_fault_code(fault_code)` | int | `(eq_code, eq_name)` |
+| `lookup_complete(fault_code, car_id, notch, occur)` | int × 4 | Dict lengkap |
+
+Confidence level setiap fault code: `C` = confirmed dari PTU output, `E` = extracted dari manual, `R` = range-only.
 
 ## Development
 

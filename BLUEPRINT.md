@@ -254,30 +254,59 @@ Timestamp,Equipment,Fault,Car,Notch,Speed,Voltage,Current,Temperature
 
 ## 7. Equipment & Fault Mapping
 
+Semua mapping ada di `config/equipment_map.py`. Sumber data:
+1. Chapter 16 TIS Maintenance Manual (SRR-RST-GEN-0104-16D)
+2. Attachment 8 — Failure Guidance List of TIS (BH22001)
+3. Cross-reference dengan output PTU asli (D260507_282.csv, dudu_ts_5.pdf)
+
 ### 7.1 Equipment Codes
 
-```python
-EQUIPMENT_MAP = {
-    0x01: "TCU",      # Train Control Unit
-    0x02: "BCU",      # Brake Control Unit
-    0x03: "DCU",      # Door Control Unit
-    0x04: "HVAC",     # Heating Ventilation Air Conditioning
-    0x05: "PIS",      # Passenger Information System
-    # ... more mappings
-}
-```
+| Code | Name           | Fault Range |
+|------|----------------|-------------|
+| 1    | TIS            | 100–199     |
+| 2    | ATO            | 200–299     |
+| 3    | VVVF1          | 300–399     |
+| 4    | VVVF2          | 300–399     |
+| 5    | APS            | 400–499     |
+| 6    | BECU           | 500–599     |
+| 7    | ACE            | 600–699     |
+| 8    | PID            | 700–799     |
+| 9    | PA             | 800–899     |
+| 10   | DOOR           | 900–999     |
+| 11   | VMI            | 1000–1099   |
+| 19   | Radio          | 1100–1199   |
+| 20   | CCTV           | 1200–1299   |
+| 21   | BatteryCharger | 1300–1399   |
+| 22   | Compressor     | 1400–1499   |
+| 23   | DataRecorder   | 1500–1599   |
 
 ### 7.2 Fault Codes
 
+125+ fault codes tersimpan sebagai `FaultInfo(abbrev, description, confidence)`.
+
 ```python
-FAULT_MAP = {
-    0x01: "OVERCURRENT",
-    0x02: "OVERVOLTAGE",
-    0x03: "UNDERVOLTAGE",
-    0x04: "SHORT_CIRCUIT",
-    0x05: "OPEN_CIRCUIT",
-    # ... more mappings
-}
+class FaultInfo(NamedTuple):
+    abbrev: str       # Kode singkat, e.g. "ESA", "LBVRS1F"
+    description: str  # Deskripsi lengkap dari manual
+    confidence: str   # "C"=Confirmed, "E"=Extracted, "R"=Range-only
+```
+
+Contoh:
+```python
+121: FaultInfo("ESA",     "CCU/MON UNIT Ethernet abnormality",          "C"),
+211: FaultInfo("LBVRS1F", "Tc1 logic block - VRS1 communication fault", "C"),
+500: FaultInfo("NBPS",    "No BECU control power supply",               "C"),
+```
+
+### 7.3 Failure Guidance & Classification
+
+Setiap fault code memiliki:
+- **Guidance** — instruksi penanganan dari Table 6.1-2 manual (lookup by range)
+- **Classification** — `Heavy` (safety-critical) atau `Light` (non-critical)
+
+```python
+get_failure_guidance(fault_code)    # → string instruksi untuk driver/OCC
+get_fault_classification(fault_code) # → "Heavy" | "Light" | "Info"
 ```
 
 ## 8. Logging & Monitoring
