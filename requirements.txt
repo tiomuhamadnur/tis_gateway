@@ -1,0 +1,8 @@
+# TIS Gateway — Python Dependencies
+# Install: pip install -r requirements.txt
+
+# PDF generation
+reportlab>=4.0.0
+
+# Testing (opsional, untuk development)
+pytest>=7.0.0
