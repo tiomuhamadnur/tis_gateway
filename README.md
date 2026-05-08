@@ -236,3 +236,372 @@ flake8 .
 # Type check
 mypy .
 ```
+
+---
+
+## Backend API Specification
+
+Bagian ini adalah referensi untuk membangun backend API yang menerima data dari TIS Gateway.
+Gateway berperan sebagai **producer** (pengirim), backend berperan sebagai **consumer** (penerima & penyimpan).
+
+### Arsitektur Backend
+
+```
+TIS Gateway (Python)
+        │
+        │  HTTP POST (JSON / multipart)
+        │  Authorization: Bearer {TIS_API_KEY}
+        ▼
+Backend API Server
+        │
+        ├── Database (PostgreSQL / MySQL)
+        ├── File Storage (CSV / PDF)
+        └── View / Dashboard
+```
+
+---
+
+### Autentikasi
+
+Semua request dari gateway menggunakan **Bearer Token** di header:
+
+```
+Authorization: Bearer {TIS_API_KEY}
+```
+
+Backend harus memvalidasi token ini di setiap endpoint. Token dikonfigurasi via environment variable `TIS_API_KEY` di sisi gateway.
+
+---
+
+### Endpoints yang Harus Diimplementasi
+
+#### POST `/v1/failures` — Terima Failure Records
+
+Dipanggil gateway setiap selesai satu sesi download dari TIS.
+
+**Request Headers:**
+```
+Content-Type: application/json
+Authorization: Bearer {TIS_API_KEY}
+```
+
+**Request Body:**
+```json
+{
+  "rake_id": 5,
+  "read_time": "2026-05-07T16:08:16",
+  "record_count": 200,
+  "records": [
+    {
+      "block_no": 10,
+      "timestamp": "2026-05-07T14:32:00",
+      "car_no": 3,
+      "occur_recover": "O",
+      "train_id": "0005",
+      "location_m": 1234,
+      "equipment_code": 8,
+      "equipment_name": "PA",
+      "fault_code": 806,
+      "fault_name": "DATASA",
+      "notch": "N2",
+      "speed_kmh": 45,
+      "overhead_v": 750.5
+    }
+  ]
+}
+```
+
+**Field `occur_recover`:**
+- `"O"` = Occurrence (fault terjadi)
+- `"R"` = Recovery (fault pulih)
+
+**Response `201 Created`:**
+```json
+{
+  "session_id": "uuid-or-integer",
+  "received": 200,
+  "status": "ok"
+}
+```
+
+---
+
+#### POST `/v1/files` — Terima Upload File (CSV / PDF)
+
+Dipanggil gateway untuk upload file hasil export. Request berformat `multipart/form-data`.
+
+**Request Fields:**
+| Field     | Type | Keterangan                                         |
+|-----------|------|----------------------------------------------------|
+| `rake_id` | int  | ID kereta                                          |
+| `file`    | file | File CSV (`text/csv`) atau PDF (`application/pdf`) |
+
+**Response `201 Created`:**
+```json
+{
+  "file_id": "uuid-or-integer",
+  "filename": "D05260507_1608.csv",
+  "status": "ok"
+}
+```
+
+---
+
+#### GET `/v1/failures` — List Sesi Download
+
+Untuk view dashboard / history.
+
+**Query Parameters:**
+| Param      | Type | Default | Keterangan               |
+|------------|------|---------|--------------------------|
+| `rake_id`  | int  | —       | Filter per kereta        |
+| `from`     | date | —       | Tanggal mulai (ISO 8601) |
+| `to`       | date | —       | Tanggal akhir            |
+| `page`     | int  | 1       | Pagination               |
+| `per_page` | int  | 20      | Jumlah per halaman       |
+
+**Response `200 OK`:**
+```json
+{
+  "total": 42,
+  "page": 1,
+  "per_page": 20,
+  "sessions": [
+    {
+      "session_id": 1,
+      "rake_id": 5,
+      "read_time": "2026-05-07T16:08:16",
+      "record_count": 200,
+      "created_at": "2026-05-07T16:08:20"
+    }
+  ]
+}
+```
+
+---
+
+#### GET `/v1/failures/{session_id}` — Detail Sesi + Records
+
+**Response `200 OK`:**
+```json
+{
+  "session_id": 1,
+  "rake_id": 5,
+  "read_time": "2026-05-07T16:08:16",
+  "record_count": 200,
+  "records": [
+    {
+      "block_no": 10,
+      "timestamp": "2026-05-07T14:32:00",
+      "car_no": 3,
+      "occur_recover": "O",
+      "train_id": "0005",
+      "location_m": 1234,
+      "equipment_code": 8,
+      "equipment_name": "PA",
+      "fault_code": 806,
+      "fault_name": "DATASA",
+      "notch": "N2",
+      "speed_kmh": 45,
+      "overhead_v": 750.5
+    }
+  ]
+}
+```
+
+---
+
+#### GET `/v1/dashboard` — Ringkasan Statistik (Evaluasi)
+
+Endpoint utama untuk halaman evaluasi / monitoring.
+
+**Response `200 OK`:**
+```json
+{
+  "total_sessions": 42,
+  "total_records": 8400,
+  "last_upload": "2026-05-07T16:08:16",
+  "by_rake": [
+    { "rake_id": 5, "session_count": 10, "record_count": 2000 }
+  ],
+  "by_equipment": [
+    { "equipment_name": "PA",    "count": 340 },
+    { "equipment_name": "VVVF1", "count": 210 }
+  ],
+  "by_classification": {
+    "Heavy": 120,
+    "Light": 7980,
+    "Info":  300
+  },
+  "recent_heavy_faults": [
+    {
+      "timestamp": "2026-05-07T14:32:00",
+      "rake_id": 5,
+      "car_no": 3,
+      "equipment_name": "VVVF1",
+      "fault_code": 305,
+      "fault_name": "OVCF"
+    }
+  ]
+}
+```
+
+---
+
+#### GET `/v1/analytics/trend` — Tren Fault per Periode
+
+**Query Parameters:** `rake_id`, `from`, `to`, `group_by` (day / week / month)
+
+**Response `200 OK`:**
+```json
+{
+  "group_by": "day",
+  "data": [
+    { "date": "2026-05-01", "count": 45 },
+    { "date": "2026-05-02", "count": 38 }
+  ]
+}
+```
+
+---
+
+#### GET `/v1/health` — Health Check
+
+```json
+{ "status": "ok", "version": "1.0" }
+```
+
+---
+
+### Struktur Database
+
+#### Tabel `sessions`
+
+Setiap POST ke `/v1/failures` membuat satu baris di sini.
+
+| Kolom          | Tipe        | Keterangan                         |
+|----------------|-------------|------------------------------------|
+| `id`           | INT PK      | Auto-increment                     |
+| `rake_id`      | INT         | ID kereta (1–99)                   |
+| `read_time`    | DATETIME    | Waktu baca dari TIS (dari gateway) |
+| `record_count` | INT         | Jumlah record diterima             |
+| `upload_ip`    | VARCHAR(45) | IP gateway pengirim                |
+| `status`       | ENUM        | `received` / `processed` / `error`|
+| `created_at`   | DATETIME    | Waktu diterima server              |
+
+---
+
+#### Tabel `failure_records`
+
+Satu baris per satu failure record dalam satu sesi.
+
+| Kolom            | Tipe        | Keterangan                                  |
+|------------------|-------------|---------------------------------------------|
+| `id`             | INT PK      | Auto-increment                              |
+| `session_id`     | INT FK      | → `sessions.id`                             |
+| `block_no`       | INT         | Nomor block di TIS (urutan record)          |
+| `timestamp`      | DATETIME    | Waktu fault terjadi (dari BCD TIS)          |
+| `car_no`         | TINYINT     | Nomor car (1–6)                             |
+| `occur_recover`  | CHAR(1)     | `O` = occurrence, `R` = recovery           |
+| `train_id`       | VARCHAR(10) | ID formasi kereta (e.g. `"0005"`)           |
+| `location_m`     | INT         | Posisi kereta dalam meter                   |
+| `equipment_code` | SMALLINT    | Kode equipment (1–23, lihat equipment map)  |
+| `equipment_name` | VARCHAR(30) | Nama equipment (e.g. `"PA"`, `"VVVF1"`)    |
+| `fault_code`     | SMALLINT    | Kode fault (100–1599)                       |
+| `fault_name`     | VARCHAR(30) | Singkatan fault (e.g. `"DATASA"`, `"ESA"`) |
+| `notch`          | VARCHAR(5)  | Level notch (e.g. `"N2"`, `"B3"`)          |
+| `speed_kmh`      | SMALLINT    | Kecepatan kereta saat fault (km/h)          |
+| `overhead_v`     | FLOAT       | Tegangan overhead wire (Volt)               |
+
+**Index yang direkomendasikan:**
+```sql
+INDEX idx_session   (session_id)
+INDEX idx_rake_time (session_id, timestamp)
+INDEX idx_fault     (fault_code)
+INDEX idx_equip     (equipment_code)
+```
+
+---
+
+#### Tabel `uploaded_files`
+
+Menyimpan metadata file CSV/PDF yang diupload gateway.
+
+| Kolom               | Tipe         | Keterangan                |
+|---------------------|--------------|---------------------------|
+| `id`                | INT PK       | Auto-increment            |
+| `session_id`        | INT FK NULL  | → `sessions.id` (nullable)|
+| `rake_id`           | INT          | ID kereta                 |
+| `original_filename` | VARCHAR(100) | e.g. `D05260507_1608.csv` |
+| `stored_path`       | VARCHAR(255) | Path file di server       |
+| `file_type`         | ENUM         | `csv` / `pdf`             |
+| `file_size_bytes`   | INT          | Ukuran file               |
+| `uploaded_at`       | DATETIME     | Waktu upload              |
+
+---
+
+#### Tabel `rakes` (Master Data)
+
+| Kolom     | Tipe        | Keterangan           |
+|-----------|-------------|----------------------|
+| `id`      | INT PK      | Auto-increment       |
+| `rake_id` | INT UNIQUE  | ID dari TIS (1–99)   |
+| `name`    | VARCHAR(50) | Nama rangkaian       |
+| `active`  | BOOLEAN     | Status operasional   |
+| `notes`   | TEXT NULL   | Catatan tambahan     |
+
+---
+
+#### Relasi Antar Tabel
+
+```
+rakes (1) ──── (N) sessions (1) ──── (N) failure_records
+                        │
+                        └──── (N) uploaded_files
+```
+
+---
+
+### HTTP Response Codes
+
+| Code | Kondisi                                       |
+|------|-----------------------------------------------|
+| 200  | OK — GET berhasil                             |
+| 201  | Created — POST berhasil, resource dibuat      |
+| 400  | Bad Request — body tidak valid / field kurang |
+| 401  | Unauthorized — API key tidak valid            |
+| 404  | Not Found — session_id tidak ditemukan        |
+| 422  | Unprocessable — data gagal validasi business  |
+| 500  | Internal Server Error                         |
+
+---
+
+### Validasi yang Harus Dilakukan Backend
+
+| Field           | Validasi                                     |
+|-----------------|----------------------------------------------|
+| `rake_id`       | Integer 1–99                                 |
+| `read_time`     | ISO 8601 datetime, tidak boleh di masa depan |
+| `record_count`  | Harus cocok dengan panjang array `records`   |
+| `car_no`        | Integer 1–6                                  |
+| `occur_recover` | Hanya `"O"` atau `"R"`                       |
+| `equipment_code`| Harus ada di equipment map (1–23)            |
+| `fault_code`    | Integer 100–1599                             |
+| `speed_kmh`     | Integer 0–200                                |
+| `overhead_v`    | Float 0–1500                                 |
+
+---
+
+### Checklist Implementasi Backend
+
+- [ ] Autentikasi Bearer Token di semua endpoint
+- [ ] `POST /v1/failures` — simpan session + records ke DB
+- [ ] `POST /v1/files` — simpan file CSV/PDF ke storage
+- [ ] `GET /v1/failures` — list dengan filter & pagination
+- [ ] `GET /v1/failures/{id}` — detail session + records
+- [ ] `GET /v1/dashboard` — statistik agregat
+- [ ] `GET /v1/analytics/trend` — tren per periode
+- [ ] `GET /v1/health` — health check
+- [ ] Validasi semua field input
+- [ ] Index database untuk query analytics
+- [ ] Log setiap request dari gateway (audit trail)
