@@ -240,7 +240,7 @@ class TISSession:
         log.info("[CMD36] Failure records %d pages × %d polls...",
                  cfg.cmd36_pages, cfg.polls_per_page)
 
-        block_no = 1
+        block_no = 0
         for page in range(cfg.cmd36_pages):
             page_records = self._poll_one_page(client, page, block_no)
 

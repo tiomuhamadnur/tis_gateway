@@ -15,9 +15,9 @@ Semua packet diawali prefix 0x02.
 #   PTU→TIS: 02 20 00 00 00 00 00 00 00 03 23 00  (12 bytes)
 #
 # CMD 0x32 (Metadata request, page N):
-#   PTU→TIS: 02 32 [page] 00 00 03 [31-page] [page]  (8 bytes)
+#   PTU→TIS: 02 32 [page] 00 00 03 [0x32-page] [page]  (8 bytes)
 #   Page 1:  02 32 01 00 00 03 31 01
-#   Page 2:  02 32 02 00 00 03 31 02
+#   Page 2:  02 32 02 00 00 03 30 02
 #
 # CMD 0x34 (Dataset B request, page N):
 #   PTU→TIS: 02 34 [page] [page-1] 00 03 [37-page] [page]

@@ -162,7 +162,7 @@ class RecordParser:
     """Parse raw payload CMD 0x36 menjadi list FailureRecord."""
 
     def parse_payload(
-        self, payload: bytes, block_start: int = 1
+        self, payload: bytes, block_start: int = 0
     ) -> List[FailureRecord]:
         """
         Parse payload CMD 0x36 (tanpa header 8B dan checksum 2B).

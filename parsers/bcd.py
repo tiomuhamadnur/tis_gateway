@@ -12,6 +12,11 @@ Contoh:
 from datetime import datetime
 
 
+def is_valid_bcd_byte(b: int) -> bool:
+    """True jika byte adalah BCD valid (kedua nibble 0-9)."""
+    return ((b >> 4) & 0x0F) <= 9 and (b & 0x0F) <= 9
+
+
 def bcd_byte(b: int) -> int:
     """Decode satu byte BCD ke integer. Contoh: 0x26 → 26."""
     high = (b >> 4) & 0x0F
@@ -41,6 +46,11 @@ def decode_timestamp(data: bytes, offset: int = 0) -> datetime:
 
 def is_valid_timestamp(data: bytes, offset: int = 0) -> bool:
     """Cek apakah 6 byte di offset adalah timestamp BCD yang valid."""
+    if len(data) < offset + 6:
+        return False
+    # Setiap byte timestamp harus BCD valid (nibble 0-9)
+    if not all(is_valid_bcd_byte(data[offset + i]) for i in range(6)):
+        return False
     try:
         ts = decode_timestamp(data, offset)
         return ts.year > 2000

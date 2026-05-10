@@ -2,12 +2,19 @@
 config/settings.py
 ==================
 Semua konfigurasi gateway terpusat di sini.
-Edit file ini untuk menyesuaikan environment tanpa ubah kode.
+Edit file .env di root project, tidak perlu ubah file ini.
 """
 
 from dataclasses import dataclass, field
 from typing import Optional
 import os
+
+# Load .env jika ada (opsional — tidak error jika file tidak ada)
+try:
+    from dotenv import load_dotenv
+    load_dotenv(override=False)  # env OS lebih prioritas
+except ImportError:
+    pass  # python-dotenv belum install, skip
 
 
 # ─────────────────────────────────────────────
@@ -105,16 +112,16 @@ class CloudConfig:
     enabled: bool = False
 
     # Base URL REST API cloud
-    api_base_url: str = "https://api.example.com"
+    api_base_url: str = "http://127.0.0.1:8000"
 
     # Endpoint untuk upload failure records
-    endpoint_failures: str = "/v1/failures"
+    endpoint_failures: str = "/api/failures"
 
     # Endpoint untuk upload file (CSV/PDF)
-    endpoint_files: str = "/v1/files"
+    endpoint_files: str = "/api/files"
 
     # API key — sebaiknya diambil dari environment variable
-    api_key: str = field(default_factory=lambda: os.getenv("TIS_API_KEY", ""))
+    api_key: str = field(default_factory=lambda: os.getenv("TIS_API_KEY", "tiomuhamadnur"))
 
     # Timeout HTTP request (detik)
     http_timeout_sec: float = 30.0

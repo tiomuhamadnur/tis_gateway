@@ -79,10 +79,10 @@ class ResponseParser:
         seq  = (data[2] << 8) | data[3]
         page = (data[6] << 8) | data[7]
 
-        # Verifikasi checksum
+        # Verifikasi checksum (algoritma masih hipotesis — gagal = debug saja, tidak blokir)
         ck_ok = verify_checksum(data)
         if not ck_ok:
-            log.warning(f"Checksum gagal pada CMD=0x{cmd:02X} seq={seq}")
+            log.debug("Checksum belum cocok CMD=0x%02X seq=%d (algoritma belum dikonfirmasi)", cmd, seq)
 
         payload = data[HEADER_SIZE:-CHECKSUM_SIZE]
 

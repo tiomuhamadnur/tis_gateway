@@ -46,19 +46,18 @@ CMD34_RESP = {
 }
 
 # Template CMD 0x36 response — 5 records per page, semua record sama (test data)
+# Struktur: Header(8B) + StartMark(1B) + 5×Record(20B) + EndMark(1B) + Checksum(2B) = 112B
+# Setiap record 20B: Timestamp(6) Unknown(1) Notch(1) Status(1) Loc(2) Car(1)
+#                    Equip(1) Sub(1) FaultCode(2) OV(1) Speed(1) TrainID(2)
+#                    ← "ffff" di akhir tiap record = Train ID 0xFFFF (depot), BUKAN separator
 SAMPLE_RECORD_PAGE = bytes.fromhex(
-    "023600610005000000"
-    "260507160407000001000006090503260100"  # record 1
-    "ffff"
-    "260507160405000011000006090503260800"  # record 2
-    "ffff"
-    "260507160400000001000002080502bc0000"  # record 3
-    "ffff"
-    "260507160400000001000002070502580000"  # record 4
-    "ffff"
-    "260507160400000001000002060501f40000"  # record 5
-    "ffff"
-    "039b00"
+    "023600610005000000"                    # Header 8B (02 36 seq seq 00 05 page page) + StartMark 00
+    "260507160407000001000006090503260100ffff"  # Record 1: ts=260507-160407 car=6 eq=9 fc=806 tid=FFFF
+    "260507160405000011000006090503260800ffff"  # Record 2: ts=260507-160405 car=6 eq=9 fc=806 recover
+    "260507160400000001000002080502bc0000ffff"  # Record 3: ts=260507-160400 car=2 eq=8 fc=700
+    "260507160400000001000002070502580000ffff"  # Record 4: ts=260507-160400 car=2 eq=7 fc=600
+    "260507160400000001000002060501f40000ffff"  # Record 5: ts=260507-160400 car=2 eq=6 fc=500
+    "039b00"                                # EndMark 03 + Checksum 9B00
 )
 
 HEARTBEAT = b'\x00' * 256

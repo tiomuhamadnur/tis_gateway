@@ -30,6 +30,23 @@ from utils.logger import get_logger
 log = get_logger("main")
 
 
+def _export_raw(records, rake_id: int, read_time, output_dir: str):
+    """Simpan concatenated raw bytes tiap record ke file .bin untuk debugging."""
+    try:
+        os.makedirs(output_dir, exist_ok=True)
+        date     = read_time.strftime("%y%m%d")
+        filepath = os.path.join(output_dir, f"D{date}_{rake_id:03d}.bin")
+        with open(filepath, "wb") as f:
+            for rec in records:
+                f.write(rec.raw_bytes)
+        log.info("[MAIN] RAW: %s (%d records × 20B = %dB)",
+                 filepath, len(records), len(records) * 20)
+        return filepath
+    except Exception as e:
+        log.error("[MAIN] Export RAW gagal: %s", e)
+        return None
+
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description="TIS Gateway — MRT Jakarta CP108",
@@ -133,6 +150,12 @@ def main():
             log.info("[MAIN] PDF: %s", pdf_path)
         except Exception as e:
             log.error("[MAIN] Export PDF gagal: %s", e)
+
+    # ── FASE 3.5: Export raw bytes (debug) ───────────────────────
+    if config.output.export_raw:
+        raw_path = _export_raw(result.records, rake_id, read_time, config.output.output_dir)
+        if raw_path:
+            exported_files.append(raw_path)
 
     # ── FASE 4: Upload ke cloud ───────────────────────────────────
     if config.cloud.enabled:

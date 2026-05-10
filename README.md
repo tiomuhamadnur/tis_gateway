@@ -1,607 +1,351 @@
 # TIS Gateway — MRT Jakarta CP108
 
 Gateway service untuk mengambil data failure dari Train Information System (TIS)
-Sumitomo CP108 via UDP, lalu mengekspornya ke CSV, PDF, dan cloud API.
+Sumitomo CP108 via UDP, lalu mengekspornya ke CSV, PDF, dan mengirimnya ke CMS Laravel.
 
-> 📋 **Cetak Biru Detail**: Lihat [BLUEPRINT.md](BLUEPRINT.md) untuk spesifikasi teknis lengkap, arsitektur, dan protokol komunikasi.
+---
+
+## Arsitektur Sistem
+
+```
+TIS Hardware (CCU/MON)
+        │  UDP port 262
+        ▼
+Python Gateway (main.py)
+        │  HTTP POST (JSON)
+        ▼
+Laravel CMS (tis_api_laravel/)
+        │
+        ├── Database MySQL (failure_records, failure_sessions)
+        └── Web Dashboard (/failures)
+```
+
+---
 
 ## Persyaratan Sistem
 
-- **Python**: 3.7+ (direkomendasikan 3.8+ untuk performa optimal)
-- **OS**: Windows/Linux/macOS
-- **Dependencies**: Lihat `requirements.txt`
-- **Network**: Akses UDP ke TIS server (default port 262)
+| Komponen | Versi Minimum | Keterangan |
+|---|---|---|
+| Python | 3.7+ | Gateway TIS |
+| PHP | 8.1+ | Laravel CMS |
+| MySQL / SQLite | 5.7+ / 3.x | Database CMS |
+| Composer | 2.x | Dependency PHP |
 
-## Setup Awal
-
-### 1. Clone atau Download Proyek
-
-```bash
-git clone <repository-url>
-cd tis_gateway
-```
-
-### 2. Install Python Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-**Catatan**: Jika menggunakan virtual environment, aktifkan dulu:
-
-```bash
-python -m venv venv
-venv\Scripts\activate  # Windows
-source venv/bin/activate  # Linux/Mac
-pip install -r requirements.txt
-```
-
-### 3. Konfigurasi Environment
-
-Edit file `config/settings.py` untuk menyesuaikan environment:
-
-#### Parameter Wajib:
-- `tis_host`: IP address TIS server (default: "127.0.0.1")
-- `tis_port`: Port TIS untuk menerima data (default: 262)
-- `local_port`: Port lokal gateway untuk listen (default: 263)
-
-#### Parameter Opsional:
-- `output_dir`: Direktori output file (default: "./output")
-- `export_csv`: Enable/disable export CSV (default: True)
-- `export_pdf`: Enable/disable export PDF (default: True)
-- `cloud.enabled`: Enable/disable upload ke cloud (default: False)
-- `cloud.api_base_url`: URL base cloud API
-- `log.level`: Level logging (DEBUG/INFO/WARNING/ERROR)
-
-#### Override via Environment Variable:
-```bash
-export TIS_HOST=192.168.1.100
-export TIS_PORT=262
-export OUTPUT_DIR=/path/to/output
-export CLOUD_API_URL=https://api.example.com
-export LOG_LEVEL=DEBUG
-```
-
-### 4. Verifikasi Setup
-
-```bash
-# Test import modules
-python -c "from config.settings import config; print('Config OK')"
-
-# Test mock server (untuk development)
-python tests/mock_tis.py &
-python main.py --rake-id 5 --host 127.0.0.1
-```
+---
 
 ## Struktur Proyek
 
 ```
 tis_gateway/
 ├── config/
-│   ├── settings.py          # Semua konfigurasi terpusat (IP, port, timeout, dll)
-│   └── equipment_map.py     # 125+ fault codes dengan deskripsi, guidance, & klasifikasi
+│   ├── settings.py          # Konfigurasi terpusat (network, output, cloud, log)
+│   └── equipment_map.py     # 125+ fault code, equipment map, guidance
 │
 ├── protocol/
-│   ├── udp_client.py        # Low-level UDP socket handler
-│   ├── commands.py          # Builder untuk semua command packet (0x20, 0x32, 0x34, 0x36)
-│   └── session.py           # Orkestrasi sesi: handshake → download → disconnect
+│   ├── udp_client.py        # UDP socket handler (send/receive/retry)
+│   ├── commands.py          # Builder packet CMD 0x20 / 0x32 / 0x34 / 0x36
+│   └── session.py           # Orkestrasi: handshake → download → parse
 │
 ├── parsers/
-│   ├── bcd.py               # Decode BCD timestamp
-│   ├── record_parser.py     # Parse raw bytes → FailureRecord dataclass
-│   └── response_parser.py   # Parse response packet per command type
+│   ├── bcd.py               # Decode timestamp BCD 6-byte dari TIS
+│   ├── record_parser.py     # Parse 20-byte raw record → FailureRecord dataclass
+│   └── response_parser.py   # Validasi & deserialisasi UDP response packet
 │
 ├── exporter/
-│   ├── csv_exporter.py      # Generate CSV (format identik Sumitomo PTU)
-│   └── pdf_exporter.py      # Generate PDF (format identik Sumitomo PTU)
+│   ├── csv_exporter.py      # Export CSV (format identik PTU Sumitomo)
+│   └── pdf_exporter.py      # Export PDF tabular
 │
 ├── uploader/
-│   └── cloud_uploader.py    # Kirim data ke cloud REST API
+│   └── cloud_uploader.py    # HTTP POST ke Laravel API (JSON + multipart)
 │
 ├── utils/
-│   ├── logger.py            # Logging terpusat
-│   └── checksum.py          # Kalkulasi & verifikasi checksum paket
+│   ├── logger.py            # Logging terpusat dengan rotasi harian
+│   └── checksum.py          # Kalkulasi & verifikasi checksum UDP packet
 │
 ├── tests/
-│   ├── test_parser.py       # Unit test parser dengan data pcap nyata
-│   ├── test_exporter.py     # Unit test output CSV & PDF
-│   └── mock_tis.py          # Mock TIS server untuk testing tanpa kereta
+│   ├── mock_tis.py          # Mock TIS server (tanpa kereta fisik)
+│   ├── dummy_upload.py      # Kirim 1 sesi dummy ke API (CLI)
+│   ├── dummy_sessions.py    # Kirim 15 sesi dummy multi-trainset
+│   ├── dummy_one_session.py # Kirim 1 sesi 200 record tersebar 3 hari
+│   └── test_parser.py       # Unit test parser dengan data PCAP nyata
 │
-├── main.py                  # Entry point — jalankan satu sesi download
-├── requirements.txt         # Python dependencies
-├── README.md                # Dokumentasi ini
-└── BLUEPRINT.md             # Cetak biru detail aplikasi
+├── tis_api_laravel/         # Laravel CMS (dashboard + REST API)
+├── docs/                    # Dokumen referensi & sample data
+├── main.py                  # Entry point gateway
+├── .env                     # Konfigurasi environment (tidak di-commit)
+└── requirements.txt         # Python dependencies
 ```
+
+---
+
+## Setup
+
+### 1. Python Gateway
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Salin dan sesuaikan konfigurasi
+cp .env.example .env
+```
+
+Edit `.env`:
+
+```env
+TIS_HOST=192.168.x.x   # IP CCU/MON kereta (ganti dari 127.0.0.1)
+OUTPUT_DIR=./output
+CLOUD_API_URL=http://127.0.0.1:8000
+TIS_API_KEY=tiomuhamadnur
+LOG_LEVEL=INFO
+```
+
+### 2. Laravel CMS
+
+```bash
+cd tis_api_laravel
+
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate
+php artisan db:seed
+
+php artisan serve   # berjalan di http://127.0.0.1:8000
+```
+
+---
 
 ## Cara Pakai
 
 ### Command Line Options
 
-```bash
-python main.py [OPTIONS]
-
-Options:
-  --rake-id INTEGER     ID kereta (1-99) [required]
-  --host TEXT           IP TIS server [default: dari config]
-  --port INTEGER        Port TIS server [default: dari config]
-  --output-dir TEXT     Direktori output [default: dari config]
-  --no-csv              Skip export CSV
-  --no-pdf              Skip export PDF
-  --no-upload           Skip upload ke cloud
-  --help                Show help message
-```
+| Opsi | Tipe | Default | Keterangan |
+|---|---|---|---|
+| `--rake-id` | int | auto-detect | Override nomor formasi kereta |
+| `--host` | str | dari `.env` | IP TIS (CCU/MON) |
+| `--port` | int | `262` | Port TIS |
+| `--local-port` | int | `263` | Port lokal gateway |
+| `--output-dir` | str | `./output` | Direktori output file |
+| `--no-csv` | flag | — | Skip export CSV |
+| `--no-pdf` | flag | — | Skip export PDF |
+| `--upload` | flag | — | Aktifkan upload ke CMS |
+| `--raw` | flag | — | Simpan raw bytes (debug) |
 
 ### Contoh Penggunaan
 
-```bash
-# Jalankan dengan konfigurasi default
-python main.py --rake-id 5
+| Skenario | Perintah |
+|---|---|
+| Paling umum — colok LAN, jalankan | `python main.py --upload` |
+| Rake ID tidak terdeteksi otomatis | `python main.py --rake-id 5 --upload` |
+| Override IP TIS secara eksplisit | `python main.py --host 192.168.1.100 --upload` |
+| Hanya lokal, tanpa upload ke CMS | `python main.py` |
+| Hanya CSV, skip PDF | `python main.py --no-pdf --upload` |
+| Test dengan mock server | `python tests/mock_tis.py` lalu `python main.py --host 127.0.0.1` |
 
-# Jalankan dengan host spesifik
-python main.py --rake-id 5 --host 192.168.1.100 --port 262
+---
 
-# Jalankan dengan output custom, skip PDF
-python main.py --rake-id 5 --output-dir /tmp/tis_output --no-pdf
+## Alur Eksekusi
 
-# Test dengan mock server (development)
-python tests/mock_tis.py &
-python main.py --rake-id 5 --host 127.0.0.1
-```
+| Fase | Perintah TIS | Halaman | Keterangan |
+|---|---|---|---|
+| 1. Handshake | CMD `0x20` | 1 | Auto-detect `rake_id` dari respons TIS |
+| 2. Metadata | CMD `0x32` | 6 | Download metadata sesi |
+| 3. Dataset B | CMD `0x34` | 6 | Download dataset tambahan |
+| 4. Failure records | CMD `0x36` | 40 × 3 poll | Download 200 failure records (5 record/page) |
+| 5. Export | — | — | Generate CSV dan/atau PDF ke `./output/` |
+| 6. Upload | HTTP POST | — | Kirim JSON + file ke Laravel jika `--upload` |
 
-### Output Files
+### Nama File Output
 
-Script akan generate file dengan format:
-- `D{rake_id}{date}{time}.csv` — Data failure dalam format CSV
-- `D{rake_id}{date}{time}.pdf` — Report PDF dengan tabel dan grafik
-- `D{rake_id}{date}{time}.bin` — Raw bytes response (jika `export_raw=True`)
+| Format | Contoh |
+|---|---|
+| CSV | `D260507_005.csv` |
+| PDF | `D260507_005.pdf` |
+| RAW (debug) | `D260507_005.bin` |
 
-### Logging
-
-Log akan ditulis ke:
-- Console (stdout/stderr)
-- File: `logs/tis_gateway_{date}.log` (jika `log_to_file=True`)
-
-## Troubleshooting
-
-### Error: "No module named 'parsers'"
-- Pastikan semua `__init__.py` ada di setiap subfolder
-- Jalankan: `python -c "import parsers; print('OK')"`
-
-### Error: "Connection refused" / "No response from TIS"
-- Cek IP dan port TIS server
-- Pastikan firewall mengizinkan UDP traffic
-- Test konektivitas: `nc -u -z {host} {port}`
-
-### Error: "Permission denied" pada output directory
-- Cek permission write pada direktori output
-- Buat direktori jika belum ada: `mkdir -p {output_dir}`
-
-### Error: "reportlab not found"
-- Install ulang: `pip install reportlab==3.6.13`
-- Untuk Python 3.7, gunakan reportlab < 4.0
-
-### Performance Issue
-- Tingkatkan `recv_timeout_sec` jika network lambat
-- Kurangi `max_retries` jika timeout sering terjadi
-- Monitor log untuk bottleneck
-
-## Flow Komunikasi
-
-```
-1. Handshake  (CMD 0x20)  — 1x
-2. Metadata   (CMD 0x32)  — 6 pages
-3. Data Set B (CMD 0x34)  — 6 pages
-4. Failure    (CMD 0x36)  — 40 pages × 5 records = 200 records
-5. Export     → CSV + PDF
-6. Upload     → Cloud API
-```
+---
 
 ## Equipment & Fault Map
 
-`config/equipment_map.py` mendecode semua field dari raw packet:
+Semua decoding dilakukan oleh `config/equipment_map.py` (Python) dan `TisEquipmentMap.php` (Laravel).
 
-| Helper | Input | Output |
-|--------|-------|--------|
-| `get_fault_abbrev(fault_code)` | int | Abbreviation, e.g. `"ESA"` |
-| `get_fault_description(fault_code)` | int | Deskripsi lengkap |
-| `get_fault_classification(fault_code)` | int | `"Heavy"` / `"Light"` |
-| `get_failure_guidance(fault_code)` | int | Instruksi penanganan |
-| `get_equipment_by_fault_code(fault_code)` | int | `(eq_code, eq_name)` |
-| `lookup_complete(fault_code, car_id, notch, occur)` | int × 4 | Dict lengkap |
+### Equipment Code
 
-Confidence level setiap fault code: `C` = confirmed dari PTU output, `E` = extracted dari manual, `R` = range-only.
+| Code | Nama | Klasifikasi Range |
+|---|---|---|
+| 1 | TIS | Heavy (100–199) |
+| 2 | ATO | Heavy (200–299) |
+| 3 | VVVF1 | Heavy (300–399) |
+| 4 | VVVF2 | Heavy (300–399) |
+| 5 | APS | Heavy (400–499) |
+| 6 | BECU | Heavy (500–599) |
+| 7 | ACE | Light (600–699) |
+| 8 | PID | Light (700–799) |
+| 9 | PA | Light (800–899) |
+| 10 | DOOR | Heavy (900–999) |
+| 11 | VMI | Light (1000–1099) |
+| 19 | Radio | Light (1100–1199) |
+| 20 | CCTV | Light (1200–1299) |
 
-## Development
+### Klasifikasi Fault
 
-### Running Tests
-
-```bash
-# Unit tests
-python -m pytest tests/
-
-# Test dengan mock server
-python tests/mock_tis.py &
-python main.py --rake-id 5 --host 127.0.0.1
-```
-
-### Code Quality
-
-```bash
-# Format code
-black .
-
-# Lint code
-flake8 .
-
-# Type check
-mypy .
-```
+| Klasifikasi | Dasar | Contoh Equipment |
+|---|---|---|
+| **Heavy** | Fault code range equipment safety-critical | ATO, BECU, DOOR, VVVF, APS |
+| **Light** | Fault code range equipment non-safety | PA, PID, ACE, CCTV, Radio |
+| **Info** | Fault code di luar semua range | Fallback otomatis |
 
 ---
 
-## Backend API Specification
+## Fitur Pairing Occur ↔ Recover
 
-Bagian ini adalah referensi untuk membangun backend API yang menerima data dari TIS Gateway.
-Gateway berperan sebagai **producer** (pengirim), backend berperan sebagai **consumer** (penerima & penyimpan).
+Setiap fault event di TIS direkam dalam dua baris:
+- `occur_recover = 0` → **Occur** (fault mulai terjadi)
+- `occur_recover = 1` → **Recover** (fault selesai / pulih)
 
-### Arsitektur Backend
+Gateway menyimpan keduanya ke database. Setelah upload, `FaultPairingService` secara otomatis mencocokkan pasangan Occur–Recover berdasarkan `fault_code + car_no` yang sama, lalu menghitung **durasi fault** dalam detik.
 
-```
-TIS Gateway (Python)
-        │
-        │  HTTP POST (JSON / multipart)
-        │  Authorization: Bearer {TIS_API_KEY}
-        ▼
-Backend API Server
-        │
-        ├── Database (PostgreSQL / MySQL)
-        ├── File Storage (CSV / PDF)
-        └── View / Dashboard
-```
+| Kolom | Keterangan |
+|---|---|
+| `paired_record_id` | FK ke record pasangan (Occur↔Recover) |
+| `duration_seconds` | Durasi fault (null = masih aktif / belum resolve) |
+
+Dashboard di `/failures` menampilkan:
+
+| Occurred At | Recovered At | Duration | Equipment | Fault | … |
+|---|---|---|---|---|---|
+| 08 Mei 2026 14:32:15 | 08 Mei 2026 14:35:42 | 3m 27s | BECU | NBPS | … |
+| 08 Mei 2026 16:04:07 | *Still Active* | — | DOOR | OPE | … |
 
 ---
 
-### Autentikasi
+## Testing & Dummy Data
 
-Semua request dari gateway menggunakan **Bearer Token** di header:
+| Script | Keterangan | Perintah |
+|---|---|---|
+| `tests/mock_tis.py` | Simulasi hardware TIS di localhost | `python tests/mock_tis.py` |
+| `tests/dummy_upload.py` | Kirim N record dummy (CLI) | `python tests/dummy_upload.py --count 50` |
+| `tests/dummy_one_session.py` | 1 sesi, 200 record, 3 hari berbeda | `python tests/dummy_one_session.py --rake-id 5` |
+| `tests/dummy_sessions.py` | 15 sesi multi-trainset | `python tests/dummy_sessions.py` |
+| `tests/test_parser.py` | Unit test parser dengan data PCAP nyata | `python -m pytest tests/test_parser.py` |
+
+---
+
+## Troubleshooting
+
+| Error | Penyebab | Solusi |
+|---|---|---|
+| `rake_id tidak diketahui` | TIS tidak kirim nomor formasi di handshake | Tambah `--rake-id <nomor>` |
+| `Connection refused / No response` | IP TIS salah atau firewall | Cek `TIS_HOST` di `.env`, pastikan port 262 terbuka |
+| `No module named 'parsers'` | Python path tidak benar | Jalankan dari root project: `cd tis_gateway && python main.py` |
+| `reportlab not found` | Dependency belum install | `pip install -r requirements.txt` |
+| `HTTP 401 dari CMS` | API key tidak cocok | Samakan `TIS_API_KEY` di `.env` dengan config Laravel |
+| `HTTP 422 dari CMS` | Payload tidak valid | Cek log Laravel: `php artisan log:show` |
+| Laravel tidak jalan | Server belum distart | `cd tis_api_laravel && php artisan serve` |
+
+---
+
+## REST API CMS
+
+API dilindungi Bearer Token (`TIS_API_KEY`). Header wajib di semua request:
 
 ```
 Authorization: Bearer {TIS_API_KEY}
-```
-
-Backend harus memvalidasi token ini di setiap endpoint. Token dikonfigurasi via environment variable `TIS_API_KEY` di sisi gateway.
-
----
-
-### Endpoints yang Harus Diimplementasi
-
-#### POST `/v1/failures` — Terima Failure Records
-
-Dipanggil gateway setiap selesai satu sesi download dari TIS.
-
-**Request Headers:**
-```
 Content-Type: application/json
-Authorization: Bearer {TIS_API_KEY}
 ```
 
-**Request Body:**
+### Endpoints
+
+| Method | Endpoint | Keterangan |
+|---|---|---|
+| `POST` | `/api/failures` | Terima failure records dari gateway |
+| `GET` | `/api/failures` | List semua sesi (filter: rake_id, from, to) |
+| `GET` | `/api/failures/{session_id}` | Detail satu sesi + semua record-nya |
+| `POST` | `/api/files` | Upload file CSV / PDF (multipart) |
+| `GET` | `/api/dashboard` | Statistik agregat dashboard |
+| `GET` | `/api/analytics/trend` | Tren fault per hari/minggu/bulan |
+| `GET` | `/api/analytics/pareto` | Analisis Pareto fault code |
+| `GET` | `/api/health` | Health check |
+
+### Contoh POST `/api/failures`
+
 ```json
 {
   "rake_id": 5,
-  "read_time": "2026-05-07T16:08:16",
+  "read_time": "2026-05-08T16:08:16",
   "record_count": 200,
   "records": [
     {
-      "block_no": 10,
-      "timestamp": "2026-05-07T14:32:00",
+      "block_no": 0,
+      "timestamp": "2026-05-08T14:32:00",
       "car_no": 3,
-      "occur_recover": "O",
-      "train_id": "0005",
-      "location_m": 1234,
-      "equipment_code": 8,
+      "occur_recover": 0,
+      "train_id": "FFFF",
+      "location_m": 0,
+      "equipment_code": 9,
       "equipment_name": "PA",
       "fault_code": 806,
       "fault_name": "DATASA",
-      "notch": "N2",
-      "speed_kmh": 45,
-      "overhead_v": 750.5
+      "notch": "EB",
+      "speed_kmh": 0,
+      "overhead_v": 10
     }
   ]
 }
 ```
 
-**Field `occur_recover`:**
-- `"O"` = Occurrence (fault terjadi)
-- `"R"` = Recovery (fault pulih)
+### Validasi Field
 
-**Response `201 Created`:**
-```json
-{
-  "session_id": "uuid-or-integer",
-  "received": 200,
-  "status": "ok"
-}
-```
-
----
-
-#### POST `/v1/files` — Terima Upload File (CSV / PDF)
-
-Dipanggil gateway untuk upload file hasil export. Request berformat `multipart/form-data`.
-
-**Request Fields:**
-| Field     | Type | Keterangan                                         |
-|-----------|------|----------------------------------------------------|
-| `rake_id` | int  | ID kereta                                          |
-| `file`    | file | File CSV (`text/csv`) atau PDF (`application/pdf`) |
-
-**Response `201 Created`:**
-```json
-{
-  "file_id": "uuid-or-integer",
-  "filename": "D05260507_1608.csv",
-  "status": "ok"
-}
-```
+| Field | Tipe | Aturan |
+|---|---|---|
+| `rake_id` | int | Wajib |
+| `read_time` | datetime | Wajib, format ISO 8601 |
+| `records` | array | Wajib, min 1 item |
+| `car_no` | int | 1–6 |
+| `occur_recover` | int | `0` (Occur) atau `1` (Recover) |
+| `equipment_code` | int | 1–23 |
+| `fault_code` | int | 100–1599 |
+| `speed_kmh` | int | ≥ 0 |
+| `overhead_v` | int | ≥ 0 |
 
 ---
 
-#### GET `/v1/failures` — List Sesi Download
+## Skema Database
 
-Untuk view dashboard / history.
+### Tabel `failure_sessions`
 
-**Query Parameters:**
-| Param      | Type | Default | Keterangan               |
-|------------|------|---------|--------------------------|
-| `rake_id`  | int  | —       | Filter per kereta        |
-| `from`     | date | —       | Tanggal mulai (ISO 8601) |
-| `to`       | date | —       | Tanggal akhir            |
-| `page`     | int  | 1       | Pagination               |
-| `per_page` | int  | 20      | Jumlah per halaman       |
+| Kolom | Tipe | Keterangan |
+|---|---|---|
+| `id` | BIGINT PK | Auto-increment |
+| `session_id` | UUID | Identifier unik per sesi |
+| `rake_id` | VARCHAR | Nomor formasi kereta |
+| `read_time` | DATETIME | Waktu baca dari TIS |
+| `download_date` | DATETIME | Waktu diterima server |
+| `total_records` | INT | Jumlah record dalam sesi |
+| `status` | VARCHAR | `completed` / `pending` / `failed` |
 
-**Response `200 OK`:**
-```json
-{
-  "total": 42,
-  "page": 1,
-  "per_page": 20,
-  "sessions": [
-    {
-      "session_id": 1,
-      "rake_id": 5,
-      "read_time": "2026-05-07T16:08:16",
-      "record_count": 200,
-      "created_at": "2026-05-07T16:08:20"
-    }
-  ]
-}
-```
+### Tabel `failure_records`
 
----
-
-#### GET `/v1/failures/{session_id}` — Detail Sesi + Records
-
-**Response `200 OK`:**
-```json
-{
-  "session_id": 1,
-  "rake_id": 5,
-  "read_time": "2026-05-07T16:08:16",
-  "record_count": 200,
-  "records": [
-    {
-      "block_no": 10,
-      "timestamp": "2026-05-07T14:32:00",
-      "car_no": 3,
-      "occur_recover": "O",
-      "train_id": "0005",
-      "location_m": 1234,
-      "equipment_code": 8,
-      "equipment_name": "PA",
-      "fault_code": 806,
-      "fault_name": "DATASA",
-      "notch": "N2",
-      "speed_kmh": 45,
-      "overhead_v": 750.5
-    }
-  ]
-}
-```
-
----
-
-#### GET `/v1/dashboard` — Ringkasan Statistik (Evaluasi)
-
-Endpoint utama untuk halaman evaluasi / monitoring.
-
-**Response `200 OK`:**
-```json
-{
-  "total_sessions": 42,
-  "total_records": 8400,
-  "last_upload": "2026-05-07T16:08:16",
-  "by_rake": [
-    { "rake_id": 5, "session_count": 10, "record_count": 2000 }
-  ],
-  "by_equipment": [
-    { "equipment_name": "PA",    "count": 340 },
-    { "equipment_name": "VVVF1", "count": 210 }
-  ],
-  "by_classification": {
-    "Heavy": 120,
-    "Light": 7980,
-    "Info":  300
-  },
-  "recent_heavy_faults": [
-    {
-      "timestamp": "2026-05-07T14:32:00",
-      "rake_id": 5,
-      "car_no": 3,
-      "equipment_name": "VVVF1",
-      "fault_code": 305,
-      "fault_name": "OVCF"
-    }
-  ]
-}
-```
-
----
-
-#### GET `/v1/analytics/trend` — Tren Fault per Periode
-
-**Query Parameters:** `rake_id`, `from`, `to`, `group_by` (day / week / month)
-
-**Response `200 OK`:**
-```json
-{
-  "group_by": "day",
-  "data": [
-    { "date": "2026-05-01", "count": 45 },
-    { "date": "2026-05-02", "count": 38 }
-  ]
-}
-```
-
----
-
-#### GET `/v1/health` — Health Check
-
-```json
-{ "status": "ok", "version": "1.0" }
-```
-
----
-
-### Struktur Database
-
-#### Tabel `sessions`
-
-Setiap POST ke `/v1/failures` membuat satu baris di sini.
-
-| Kolom          | Tipe        | Keterangan                         |
-|----------------|-------------|------------------------------------|
-| `id`           | INT PK      | Auto-increment                     |
-| `rake_id`      | INT         | ID kereta (1–99)                   |
-| `read_time`    | DATETIME    | Waktu baca dari TIS (dari gateway) |
-| `record_count` | INT         | Jumlah record diterima             |
-| `upload_ip`    | VARCHAR(45) | IP gateway pengirim                |
-| `status`       | ENUM        | `received` / `processed` / `error`|
-| `created_at`   | DATETIME    | Waktu diterima server              |
-
----
-
-#### Tabel `failure_records`
-
-Satu baris per satu failure record dalam satu sesi.
-
-| Kolom            | Tipe        | Keterangan                                  |
-|------------------|-------------|---------------------------------------------|
-| `id`             | INT PK      | Auto-increment                              |
-| `session_id`     | INT FK      | → `sessions.id`                             |
-| `block_no`       | INT         | Nomor block di TIS (urutan record)          |
-| `timestamp`      | DATETIME    | Waktu fault terjadi (dari BCD TIS)          |
-| `car_no`         | TINYINT     | Nomor car (1–6)                             |
-| `occur_recover`  | CHAR(1)     | `O` = occurrence, `R` = recovery           |
-| `train_id`       | VARCHAR(10) | ID formasi kereta (e.g. `"0005"`)           |
-| `location_m`     | INT         | Posisi kereta dalam meter                   |
-| `equipment_code` | SMALLINT    | Kode equipment (1–23, lihat equipment map)  |
-| `equipment_name` | VARCHAR(30) | Nama equipment (e.g. `"PA"`, `"VVVF1"`)    |
-| `fault_code`     | SMALLINT    | Kode fault (100–1599)                       |
-| `fault_name`     | VARCHAR(30) | Singkatan fault (e.g. `"DATASA"`, `"ESA"`) |
-| `notch`          | VARCHAR(5)  | Level notch (e.g. `"N2"`, `"B3"`)          |
-| `speed_kmh`      | SMALLINT    | Kecepatan kereta saat fault (km/h)          |
-| `overhead_v`     | FLOAT       | Tegangan overhead wire (Volt)               |
-
-**Index yang direkomendasikan:**
-```sql
-INDEX idx_session   (session_id)
-INDEX idx_rake_time (session_id, timestamp)
-INDEX idx_fault     (fault_code)
-INDEX idx_equip     (equipment_code)
-```
-
----
-
-#### Tabel `uploaded_files`
-
-Menyimpan metadata file CSV/PDF yang diupload gateway.
-
-| Kolom               | Tipe         | Keterangan                |
-|---------------------|--------------|---------------------------|
-| `id`                | INT PK       | Auto-increment            |
-| `session_id`        | INT FK NULL  | → `sessions.id` (nullable)|
-| `rake_id`           | INT          | ID kereta                 |
-| `original_filename` | VARCHAR(100) | e.g. `D05260507_1608.csv` |
-| `stored_path`       | VARCHAR(255) | Path file di server       |
-| `file_type`         | ENUM         | `csv` / `pdf`             |
-| `file_size_bytes`   | INT          | Ukuran file               |
-| `uploaded_at`       | DATETIME     | Waktu upload              |
-
----
-
-#### Tabel `rakes` (Master Data)
-
-| Kolom     | Tipe        | Keterangan           |
-|-----------|-------------|----------------------|
-| `id`      | INT PK      | Auto-increment       |
-| `rake_id` | INT UNIQUE  | ID dari TIS (1–99)   |
-| `name`    | VARCHAR(50) | Nama rangkaian       |
-| `active`  | BOOLEAN     | Status operasional   |
-| `notes`   | TEXT NULL   | Catatan tambahan     |
-
----
-
-#### Relasi Antar Tabel
-
-```
-rakes (1) ──── (N) sessions (1) ──── (N) failure_records
-                        │
-                        └──── (N) uploaded_files
-```
-
----
-
-### HTTP Response Codes
-
-| Code | Kondisi                                       |
-|------|-----------------------------------------------|
-| 200  | OK — GET berhasil                             |
-| 201  | Created — POST berhasil, resource dibuat      |
-| 400  | Bad Request — body tidak valid / field kurang |
-| 401  | Unauthorized — API key tidak valid            |
-| 404  | Not Found — session_id tidak ditemukan        |
-| 422  | Unprocessable — data gagal validasi business  |
-| 500  | Internal Server Error                         |
-
----
-
-### Validasi yang Harus Dilakukan Backend
-
-| Field           | Validasi                                     |
-|-----------------|----------------------------------------------|
-| `rake_id`       | Integer 1–99                                 |
-| `read_time`     | ISO 8601 datetime, tidak boleh di masa depan |
-| `record_count`  | Harus cocok dengan panjang array `records`   |
-| `car_no`        | Integer 1–6                                  |
-| `occur_recover` | Hanya `"O"` atau `"R"`                       |
-| `equipment_code`| Harus ada di equipment map (1–23)            |
-| `fault_code`    | Integer 100–1599                             |
-| `speed_kmh`     | Integer 0–200                                |
-| `overhead_v`    | Float 0–1500                                 |
-
----
-
-### Checklist Implementasi Backend
-
-- [ ] Autentikasi Bearer Token di semua endpoint
-- [ ] `POST /v1/failures` — simpan session + records ke DB
-- [ ] `POST /v1/files` — simpan file CSV/PDF ke storage
-- [ ] `GET /v1/failures` — list dengan filter & pagination
-- [ ] `GET /v1/failures/{id}` — detail session + records
-- [ ] `GET /v1/dashboard` — statistik agregat
-- [ ] `GET /v1/analytics/trend` — tren per periode
-- [ ] `GET /v1/health` — health check
-- [ ] Validasi semua field input
-- [ ] Index database untuk query analytics
-- [ ] Log setiap request dari gateway (audit trail)
+| Kolom | Tipe | Keterangan |
+|---|---|---|
+| `id` | BIGINT PK | Auto-increment |
+| `session_id` | BIGINT FK | → `failure_sessions.id` |
+| `block_no` | INT | Nomor urut record di TIS |
+| `timestamp` | DATETIME | Waktu fault (dari BCD TIS) |
+| `car_no` | TINYINT | Nomor car (1–6) |
+| `occur_recover` | TINYINT | `0` = Occur, `1` = Recover |
+| `paired_record_id` | BIGINT FK NULL | FK ke record pasangannya |
+| `duration_seconds` | INT NULL | Durasi fault (null = masih aktif) |
+| `train_id` | VARCHAR(10) | ID formasi (`FFFF` = di depo) |
+| `location_m` | INT | Posisi kereta (meter dari origin) |
+| `equipment_code` | TINYINT | Kode equipment (1–23) |
+| `equipment_name` | VARCHAR(50) | Nama equipment |
+| `fault_code` | SMALLINT | Kode fault (100–1599) |
+| `fault_abbrev` | VARCHAR(20) | Singkatan fault (e.g. `DATASA`) |
+| `fault_description` | TEXT | Deskripsi lengkap |
+| `classification` | VARCHAR(10) | `Heavy` / `Light` / `Info` |
+| `guidance` | TEXT | Instruksi penanganan |
+| `notch` | VARCHAR(10) | Level notch (e.g. `EB`, `B2`) |
+| `speed_kmh` | SMALLINT | Kecepatan saat fault (km/h) |
+| `overhead_v` | SMALLINT | Tegangan catenary (Volt) |

@@ -4,5 +4,8 @@
 # PDF generation
 reportlab>=4.0.0
 
+# Load .env file ke environment variable
+python-dotenv>=1.0.0
+
 # Testing (opsional, untuk development)
 pytest>=7.0.0

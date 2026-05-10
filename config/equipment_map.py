@@ -359,7 +359,9 @@ CAR_ID_MAP: Dict[int, int] = {
     0x03: 3,   # ❓ Belum confirmed — M2
     0x04: 4,   # ❓ Belum confirmed — M1'
     0x05: 5,   # ❓ Belum confirmed — M2'
-    0x11: 6,   # ✅ Confirmed — Tc2 (Head B)
+    0x06: 6,   # ✅ Confirmed — Tc2 (Head B), direct value dari record parser (PCAP TS5)
+    # 0x11: 6 pernah dicatat dari sumber lain; belum bisa dikonfirmasi encoding-nya.
+    #        record_parser.py menggunakan raw byte langsung (0x01-0x06), bukan melalui map ini.
 }
 
 CAR_TYPE_MAP: Dict[int, str] = {
