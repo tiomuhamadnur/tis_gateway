@@ -6,21 +6,56 @@
         </div>
     </div>
 
-    {{-- Date Filter --}}
-    <div class="flex flex-wrap items-end gap-3 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
-        <div>
-            <label class="mb-1.5 block text-xs font-medium text-zinc-600 dark:text-zinc-400">Dari Tanggal</label>
-            <input wire:model="dateFrom" type="date" class="rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100">
-        </div>
-        <div>
-            <label class="mb-1.5 block text-xs font-medium text-zinc-600 dark:text-zinc-400">Sampai Tanggal</label>
-            <input wire:model="dateTo" type="date" class="rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100">
-        </div>
-        <button wire:click="loadData" class="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700">
-            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/></svg>
-            Terapkan Filter
+    {{-- Date Range Filter --}}
+    <div
+        class="flex flex-wrap items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 shadow-sm dark:border-zinc-700 dark:bg-zinc-800"
+        x-data="{
+            fp: null,
+            dateFrom: '',
+            dateTo: '',
+            init() {
+                this.fp = flatpickr(this.$refs.picker, {
+                    mode: 'range',
+                    dateFormat: 'Y-m-d',
+                    locale: { rangeSeparator: ' → ' },
+                    onChange: (dates) => {
+                        const fmt = d => {
+                            const y = d.getFullYear();
+                            const m = String(d.getMonth()+1).padStart(2,'0');
+                            const day = String(d.getDate()).padStart(2,'0');
+                            return y+'-'+m+'-'+day;
+                        };
+                        this.dateFrom = dates.length >= 1 ? fmt(dates[0]) : '';
+                        this.dateTo   = dates.length >= 2 ? fmt(dates[dates.length-1]) : this.dateFrom;
+                    }
+                });
+            },
+            apply() { $wire.call('applyFilter', this.dateFrom, this.dateTo); },
+            reset() {
+                this.fp.clear();
+                this.dateFrom = '';
+                this.dateTo = '';
+                $wire.call('resetFilter');
+            }
+        }"
+    >
+        <svg class="h-4 w-4 flex-shrink-0 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+        <input
+            x-ref="picker"
+            type="text"
+            readonly
+            placeholder="Pilih rentang tanggal..."
+            class="flex-1 min-w-[200px] bg-transparent text-sm text-zinc-700 placeholder-zinc-400 focus:outline-none cursor-pointer dark:text-zinc-200 dark:placeholder-zinc-500"
+        >
+        <button @click="apply()" class="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 transition-colors">
+            <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/>
+            </svg>
+            Terapkan
         </button>
-        <button wire:click="resetFilter" class="inline-flex items-center gap-1.5 rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-700">
+        <button @click="reset()" class="inline-flex items-center rounded-lg border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-50 transition-colors dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-700">
             Reset
         </button>
     </div>
@@ -97,16 +132,15 @@
 </div>
 
 @push('scripts')
-<script defer src="https://code.highcharts.com/highcharts.js"></script>
 <script>
 (function () {
-    // Initial data embedded at render time (used on first load / wire:navigate)
+    // Use global chart registry so re-execution (SPA navigation) can destroy old instances
+    if (!window._tisCharts) window._tisCharts = {};
+
+    // Initial data embedded at render time
     const _initRake  = @json($chartRakeData);
     const _initClass = @json($chartClassData);
     const _initEquip = @json($chartEquipData);
-
-    // Track instances so we can destroy before re-creating (prevents Highcharts error #16)
-    const _charts = {};
 
     function renderCharts(data) {
         if (typeof Highcharts === 'undefined' || !document.getElementById('rake-chart')) return;
@@ -115,22 +149,26 @@
         const cls   = data ? data.classData : _initClass;
         const equip = data ? data.equipData : _initEquip;
 
+        // Destroy any existing instances before re-creating
         ['rake', 'classification', 'equipment'].forEach(function (key) {
-            if (_charts[key]) { try { _charts[key].destroy(); } catch (e) {} }
+            if (window._tisCharts[key]) {
+                try { window._tisCharts[key].destroy(); } catch (e) {}
+                window._tisCharts[key] = null;
+            }
         });
 
-        _charts.rake = Highcharts.chart('rake-chart', {
+        window._tisCharts.rake = Highcharts.chart('rake-chart', {
             chart: { type: 'column', backgroundColor: 'transparent' },
             title: { text: null },
-            xAxis: { categories: rake.map(d => d.name), crosshair: true },
+            xAxis: { categories: rake.map(function(d) { return d.name; }), crosshair: true },
             yAxis: { min: 0, title: { text: 'Failures' }, allowDecimals: false },
-            series: [{ name: 'Failures', data: rake.map(d => d.y), color: '#3b82f6' }],
+            series: [{ name: 'Failures', data: rake.map(function(d) { return d.y; }), color: '#3b82f6' }],
             credits: { enabled: false },
             legend: { enabled: false },
             accessibility: { enabled: false },
         });
 
-        _charts.classification = Highcharts.chart('classification-chart', {
+        window._tisCharts.classification = Highcharts.chart('classification-chart', {
             chart: { type: 'pie', backgroundColor: 'transparent' },
             title: { text: null },
             series: [{ name: 'Count', colorByPoint: true, data: cls }],
@@ -138,24 +176,34 @@
             accessibility: { enabled: false },
         });
 
-        _charts.equipment = Highcharts.chart('equipment-chart', {
+        window._tisCharts.equipment = Highcharts.chart('equipment-chart', {
             chart: { type: 'bar', backgroundColor: 'transparent' },
             title: { text: null },
-            xAxis: { categories: equip.map(d => d.name) },
+            xAxis: { categories: equip.map(function(d) { return d.name; }) },
             yAxis: { min: 0, title: { text: 'Failures' }, allowDecimals: false },
-            series: [{ name: 'Failures', data: equip.map(d => d.y), color: '#8b5cf6' }],
+            series: [{ name: 'Failures', data: equip.map(function(d) { return d.y; }), color: '#8b5cf6' }],
             credits: { enabled: false },
             legend: { enabled: false },
             accessibility: { enabled: false },
         });
     }
 
-    // First render (direct URL access or wire:navigate)
-    document.addEventListener('DOMContentLoaded', function () { renderCharts(null); });
-    document.addEventListener('livewire:navigated', function () { renderCharts(null); });
+    // Expose latest renderCharts globally so the persistent event listener always uses fresh data
+    window._tisRenderCharts = renderCharts;
 
-    // After Livewire loadData() / resetFilter() — receives fresh data via dispatch()
-    window.addEventListener('dashboardChartsUpdate', function (e) { renderCharts(e.detail); });
+    // Render immediately — handles both first page load (scripts run after DOM ready)
+    // and SPA navigation (Livewire injects this script after updating the DOM)
+    renderCharts(null);
+
+    // Attach the global dashboardChartsUpdate listener only once across navigations
+    if (!window._tisDashboardListenerAttached) {
+        window._tisDashboardListenerAttached = true;
+        window.addEventListener('dashboardChartsUpdate', function (e) {
+            if (document.getElementById('rake-chart')) {
+                window._tisRenderCharts(e.detail);
+            }
+        });
+    }
 })();
 </script>
 @endpush

@@ -116,19 +116,20 @@ Payload structure (102B):
   [1..100] 5 records × 20 bytes
   [101]    End marker    0x03
 
-Record structure (20B, confirmed dari PCAP + CSV cross-ref):
+Record structure (20B, confirmed dari PCAP + CSV cross-ref + moving-train comparison):
   [0-5]  Timestamp BCD (YY MM DD HH MM SS)
   [6]    Unknown (always 0x00 di depot)
-  [7]    Notch byte → NOTCH_MAP  ⚠ BEST GUESS
+  [7]    Location [m] signed int8  ✅ CONFIRMED (0=depot, -66=Block10 moving)
   [8]    Status: bit[7:4]=occur/recover, bit[3:0]=unknown
-  [9-10] Location [m] int16 big-endian  ⚠ BEST GUESS
+  [9]    Notch byte → NOTCH_MAP  ✅ CONFIRMED (0x00=EB depot; 0x80=Neutral moving)
+  [10]   Unknown (always 0x00 di depot)
   [11]   Car ID direct (0x01-0x06 = Car 1-6)
   [12]   Equipment code
   [13]   Fault sub-index
   [14-15] Fault code uint16 big-endian
   [16]   Overhead Voltage raw (× 10 = Volt)
   [17]   Speed [km/h]
-  [18-19] Train ID uint16 big-endian (0xFFFF = depot)
+  [18-19] Train ID BCD (0xFFFF = depot; e.g. 0x07 0x29 → "0729")
 ```
 
 ## 4. Struktur Data
@@ -242,10 +243,15 @@ class SessionConfig:
 
 ```
 Name:,MRTJ Failure History(Formation)
-RakeID:,5
-ReadTime:,26-05-07 16:08:16
-DataCount:,200
-DataSize:,15
+RakeID,5
+CarID,-
+CarNo,-
+ReadTime,26-05-07 16:08:16
+DataSize,15
+DataCount,200
+-,
+-,  (×10 baris)
+,,,,,,,,,,,,,,,,
 
 Block.No,Year,Month,Day,Hour,Minute,Second,CarNo,Train ID,Occur/Recover,
   Location[m],Failure Equipment,Fault Code,Notch,Speed[km/h],Overhead Voltage[V]
@@ -439,17 +445,18 @@ Legend: ✅ Confirmed  ⚠ Best Guess (belum konfirmasi kereta jalan)  ❌ Bug  
 |------|-------|--------|---------|
 | [0-5] | Timestamp BCD | ✅ | Cross-ref CSV: 2026-05-07 16:04:07 ✓ |
 | [6] | Unknown | 🔲 | Selalu 0x00 di depot; purpose tidak diketahui |
-| [7] | Notch byte | ⚠ | 0x00=EB untuk semua depot records; belum ada kereta jalan untuk konfirmasi |
+| [7] | Location [m] int8 | ✅ | 0x00=0m depot ✓; 0xBE=-66m moving confirmed Block-10 |
 | [8] hi-nibble | Occur/Recover | ✅ | (byte>>4)&1: 0x00>>4=0(Occur) ✓, 0x11>>4=1(Recover) ✓ |
 | [8] lo-nibble | Unknown | 🔲 | 0x01 untuk semua records yang dilihat; purpose tidak diketahui |
-| [9-10] | Location [m] | ⚠ | 0x0000=0 untuk depot ✓; signed & range belum konfirmasi |
+| [9] | Notch byte | ✅ | 0x00=EB depot ✓; 0x80=Neutral moving confirmed Block-10 |
+| [10] | Unknown | 🔲 | 0x00 depot; 0x80 moving; purpose tidak diketahui |
 | [11] | Car ID | ✅ | Direct value 0x01-0x06 = Car 1-6, cross-ref CSV ✓ |
 | [12] | Equipment code | ✅ | 0x09=PA ✓, 0x08=PID ✓, 0x02=ATO ✓ |
 | [13] | Fault sub-index | 🔲 | Ikut dalam output tapi belum di-validate dari manual |
 | [14-15] | Fault code uint16 | ✅ | 0x0326=806 ✓, 0x02BC=700 ✓, 0x00D4=212 ✓ |
 | [16] | Overhead V raw | ✅ | ×10 = Volt: 0x01→10V ✓, 0x08→80V ✓ |
-| [17] | Speed [km/h] | ✅ | 0x00=0 untuk depot ✓ (belum test nilai non-zero) |
-| [18-19] | Train ID uint16 | ✅ | 0xFFFF=depot ✓; nilai lain (1611, 0107) perlu konfirmasi format |
+| [17] | Speed [km/h] | ✅ | 0x00=0 untuk depot ✓ |
+| [18-19] | Train ID BCD | ✅ | 0xFFFF=depot ✓; 0x07 0x29→"0729" ✓; 0x08 0x02→"0802" ✓ |
 
 ### 11.3 Prioritas Konfirmasi Berikutnya
 

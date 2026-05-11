@@ -3,19 +3,20 @@ parsers/record_parser.py
 ========================
 Parse raw bytes CMD 0x36 payload menjadi FailureRecord.
 
-RECORD LAYOUT — 20 bytes per record (confirmed dari PCAP TS5 + cross-ref CSV):
+RECORD LAYOUT — 20 bytes per record (confirmed dari PCAP TS5 + cross-ref CSV + moving-train comparison):
   [0-5]   Timestamp BCD (YY MM DD HH MM SS)          — CONFIRMED
   [6]     ??? (always 0x00 di depot; purpose unknown) — UNKNOWN
-  [7]     Notch byte → NOTCH_MAP                      — BEST GUESS (depot=0x00=EB, belum konfirmasi kereta jalan)
+  [7]     Location [m] signed int8                    — CONFIRMED (depot=0 ✓; moving=-66 ✓ dari Block-10 comparison)
   [8]     Status byte: bit[7:4]=occur/recover          — CONFIRMED (0x00>>4=0,0x11>>4=1)
-  [9-10]  Location [m] int16 big-endian               — BEST GUESS (depot=0 ✓; sign belum konfirmasi)
+  [9]     Notch byte → NOTCH_MAP                      — CONFIRMED (depot=0x00=EB ✓; 0x80=Neutral confirmed)
+  [10]    ??? (always 0x00 di depot; purpose unknown) — UNKNOWN
   [11]    Car ID (direct: 0x01-0x06 = Car 1-6)        — CONFIRMED
   [12]    Equipment code                               — CONFIRMED
   [13]    Fault sub-index (internal TIS)               — UNCONFIRMED
   [14-15] Fault code uint16 big-endian                — CONFIRMED
   [16]    Overhead Voltage raw (× 10 = Volt)          — CONFIRMED (0x01→10V, 0x08→80V)
   [17]    Speed [km/h]                                — CONFIRMED (depot=0 ✓)
-  [18-19] Train ID uint16 big-endian (0xFFFF=depot)   — CONFIRMED
+  [18-19] Train ID BCD (0xFFFF=depot/unknown)         — CONFIRMED (BCD: 0x07 0x29 → "0729")
 
 NOTE: Sebelumnya FF FF dianggap sebagai separator — ini SALAH.
       FF FF = field Train ID di bytes [18-19].
@@ -28,7 +29,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional, List
 
-from parsers.bcd import decode_timestamp, is_valid_timestamp
+from parsers.bcd import decode_timestamp, is_valid_timestamp, bcd_byte
 from config.equipment_map import (
     get_equipment_name, get_fault_name,
     get_notch_label,
@@ -46,16 +47,17 @@ RECORD_SIZE = 20   # bytes per record (termasuk train_id di [18-19])
 # ─────────────────────────────────────────────
 OFF_TIMESTAMP  = 0   # [C] 6 bytes BCD
 OFF_UNKNOWN6   = 6   # [U] 1 byte, always 0x00 di depot
-OFF_NOTCH      = 7   # [G] 1 byte → NOTCH_MAP (0x00=EB for depot; unconfirmed for moving)
+OFF_LOCATION   = 7   # [C] 1 byte signed int8 [m] (0 depot; -66 moving, confirmed Block-10)
 OFF_STATUS     = 8   # [C] 1 byte: high-nibble = occur/recover
-OFF_LOCATION   = 9   # [G] 2 bytes int16 big-endian (0 for depot)
+OFF_NOTCH      = 9   # [C] 1 byte → NOTCH_MAP (0x00=EB depot; 0x80=Neutral confirmed)
+OFF_UNKNOWN10  = 10  # [U] 1 byte, always 0x00 di depot
 OFF_CAR_ID     = 11  # [C] 1 byte direct (0x01-0x06 = Car 1-6)
 OFF_EQUIP      = 12  # [C] 1 byte equipment code
 OFF_FAULT_SUB  = 13  # [U] 1 byte fault sub-index
 OFF_FAULT_CODE = 14  # [C] 2 bytes uint16 big-endian
 OFF_OV_RAW     = 16  # [C] 1 byte × 10 = Overhead Voltage [V]
 OFF_SPEED      = 17  # [C] 1 byte speed [km/h]
-OFF_TRAIN_ID   = 18  # [C] 2 bytes uint16 big-endian (0xFFFF = depot/unknown)
+OFF_TRAIN_ID   = 18  # [C] 2 bytes BCD (0xFF 0xFF = depot/unknown sentinel)
 
 
 # ─────────────────────────────────────────────
@@ -208,18 +210,23 @@ class RecordParser:
     def _parse_record(self, raw: bytes, block_no: int) -> FailureRecord:
         """Parse satu record 20 byte."""
         timestamp   = decode_timestamp(raw, OFF_TIMESTAMP)
-        notch_byte  = raw[OFF_NOTCH]
+        loc_byte    = raw[OFF_LOCATION]
+        location    = loc_byte - 256 if loc_byte > 127 else loc_byte   # signed int8
         status      = raw[OFF_STATUS]
         occur       = (status >> 4) & 0x01
-        loc_raw     = (raw[OFF_LOCATION] << 8) | raw[OFF_LOCATION + 1]
-        location    = loc_raw - 65536 if loc_raw > 32767 else loc_raw
-        car_no      = raw[OFF_CAR_ID]                                     # direct: 1-6
+        notch_byte  = raw[OFF_NOTCH]
+        car_no      = raw[OFF_CAR_ID]                                   # direct: 1-6
         equip_code  = raw[OFF_EQUIP]
         fault_sub   = raw[OFF_FAULT_SUB]
         fault_code  = (raw[OFF_FAULT_CODE] << 8) | raw[OFF_FAULT_CODE + 1]
         overhead_v  = raw[OFF_OV_RAW] * 10
         speed       = raw[OFF_SPEED]
-        train_id    = (raw[OFF_TRAIN_ID] << 8) | raw[OFF_TRAIN_ID + 1]
+        tid_hi      = raw[OFF_TRAIN_ID]
+        tid_lo      = raw[OFF_TRAIN_ID + 1]
+        if tid_hi == 0xFF and tid_lo == 0xFF:
+            train_id = 0xFFFF
+        else:
+            train_id = bcd_byte(tid_hi) * 100 + bcd_byte(tid_lo)
 
         if car_no == 0 or car_no > 6:
             log.warning(

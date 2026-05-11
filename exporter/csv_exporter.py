@@ -63,21 +63,24 @@ class CSVExporter:
         with open(filepath, "w", newline="", encoding=config.output.csv_encoding) as f:
             writer = csv.writer(f)
 
-            # ── Metadata header (7 baris) ────────────────────────
+            # ── Metadata header (format identik PTU, ref: D260507_282.csv) ──
             writer.writerow(["Name:", "MRTJ Failure History(Formation)"])
-            writer.writerow(["RakeID:", rake_id])
-            writer.writerow(["ReadTime:", read_time.strftime("%y-%m-%d %H:%M:%S")])
-            writer.writerow(["DataCount:", len(records)])
-            writer.writerow(["DataSize:", len(self.COLUMNS) - 1])  # minus Block.No
-            writer.writerow([])  # baris kosong
-            writer.writerow([])  # baris kosong
+            writer.writerow(["RakeID",    rake_id])
+            writer.writerow(["CarID",     "-"])
+            writer.writerow(["CarNo",     "-"])
+            writer.writerow(["ReadTime",  read_time.strftime("%y-%m-%d %H:%M:%S")])
+            writer.writerow(["DataSize",  len(self.COLUMNS) - 1])
+            writer.writerow(["DataCount", len(records)])
+            for _ in range(10):
+                writer.writerow(["-", ""])
+            writer.writerow([""] * (len(self.COLUMNS) + 1))
 
             # ── Header kolom ─────────────────────────────────────
-            writer.writerow(self.COLUMNS)
+            writer.writerow(self.COLUMNS + [""])
 
             # ── Data rows ────────────────────────────────────────
             for rec in records:
-                writer.writerow(rec.to_csv_row())
+                writer.writerow(rec.to_csv_row() + [""])
 
         log.info(f"CSV disimpan: {filepath} ({len(records)} records)")
         return filepath

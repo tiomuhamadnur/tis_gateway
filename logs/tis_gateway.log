@@ -1,0 +1,33 @@
+2026-05-11 15:25:33,343 [INFO] protocol.session — ============================================================
+2026-05-11 15:25:33,369 [INFO] protocol.session — [SESSION_START] host=192.168.1.1:262 local=263 rake_id=auto-detect
+2026-05-11 15:25:33,369 [INFO] protocol.session — ============================================================
+2026-05-11 15:25:33,369 [INFO] protocol.udp_client — UDP socket terbuka — local port 263, target 192.168.1.1:262
+2026-05-11 15:25:33,475 [INFO] protocol.session — [HS] Kirim handshake CMD 0x20...
+2026-05-11 15:25:33,619 [INFO] protocol.session — [HS] rake_id auto-detected = 3 (payload[5]=0x03)
+2026-05-11 15:25:33,638 [INFO] protocol.session — [HS] rake_id efektif = 3 (dari TIS)
+2026-05-11 15:25:33,644 [INFO] protocol.session — [HS] OK — response 128B checksum_ok=False
+2026-05-11 15:25:33,752 [INFO] protocol.session — [CMD32] Metadata 6 pages...
+2026-05-11 15:25:34,455 [INFO] protocol.session — [CMD32] selesai 6/6 pages OK
+2026-05-11 15:25:34,455 [INFO] protocol.session — [CMD34] Dataset B 6 pages...
+2026-05-11 15:25:36,444 [INFO] protocol.session — [CMD34] selesai 6/6 pages OK
+2026-05-11 15:25:36,449 [INFO] protocol.session — [CMD36] Failure records 40 pages × 3 polls...
+2026-05-11 15:26:04,146 [INFO] protocol.session — [CMD36] selesai — total 200 records dari 40/40 pages
+2026-05-11 15:26:04,146 [INFO] protocol.udp_client — UDP socket ditutup
+2026-05-11 15:26:04,146 [INFO] protocol.session — [SESSION_RESULT] success=True rake_id=3(auto) discovered=3 records=200 pages=40 duration=30.8s error='none'
+2026-05-11 15:26:04,146 [INFO] main — [MAIN] Menggunakan rake_id=3 (auto-detected dari TIS)
+2026-05-11 15:26:04,146 [INFO] main — [MAIN] Download selesai: 200 records, 30.8s
+2026-05-11 15:26:04,172 [INFO] exporter.csv_exporter — CSV disimpan: ./output\D260511_003.csv (200 records)
+2026-05-11 15:26:04,172 [INFO] main — [MAIN] CSV: ./output\D260511_003.csv
+2026-05-11 15:26:04,274 [INFO] exporter.pdf_exporter — PDF disimpan: ./output\D260511_003.pdf (200 records, 4 hal)
+2026-05-11 15:26:04,274 [INFO] main — [MAIN] PDF: ./output\D260511_003.pdf
+2026-05-11 15:26:04,277 [INFO] uploader.cloud_uploader — Upload 200 records ke http://127.0.0.1:8000/api/failures...
+2026-05-11 15:26:12,631 [INFO] uploader.cloud_uploader — Upload berhasil — HTTP 201
+2026-05-11 15:26:12,631 [INFO] uploader.cloud_uploader — Upload file D260511_003.csv ke http://127.0.0.1:8000/api/files...
+2026-05-11 15:26:14,963 [INFO] uploader.cloud_uploader — Upload berhasil — HTTP 200
+2026-05-11 15:26:14,963 [INFO] uploader.cloud_uploader — Upload file D260511_003.pdf ke http://127.0.0.1:8000/api/files...
+2026-05-11 15:26:18,018 [INFO] uploader.cloud_uploader — Upload berhasil — HTTP 201
+2026-05-11 15:26:18,018 [INFO] main — ------------------------------------------------------------
+2026-05-11 15:26:18,018 [INFO] main — [DONE] rake_id=3 records=200 files=2
+2026-05-11 15:26:18,018 [INFO] main —   -> ./output\D260511_003.csv
+2026-05-11 15:26:18,018 [INFO] main —   -> ./output\D260511_003.pdf
+2026-05-11 15:26:18,018 [INFO] main — ------------------------------------------------------------

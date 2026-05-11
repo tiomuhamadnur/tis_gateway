@@ -19,11 +19,27 @@ class Dashboard extends Component
     public array $chartRakeData = [];
     public array $chartClassData = [];
     public array $chartEquipData = [];
-    public string $dateFrom = '';
-    public string $dateTo = '';
+
+    // Internal filter state (set by applyFilter / resetFilter)
+    private string $dateFrom = '';
+    private string $dateTo = '';
 
     public function mount(): void
     {
+        $this->loadData();
+    }
+
+    public function applyFilter(string $from, string $to): void
+    {
+        $this->dateFrom = $from;
+        $this->dateTo   = $to;
+        $this->loadData();
+    }
+
+    public function resetFilter(): void
+    {
+        $this->dateFrom = '';
+        $this->dateTo   = '';
         $this->loadData();
     }
 
@@ -44,7 +60,7 @@ class Dashboard extends Component
         $this->totalSessions = $sessionQ->count();
         $this->totalRecords  = $recordQ->count();
 
-        // Failures per trainset (count actual records, not sessions)
+        // Failures per trainset
         $rakeQ = FailureRecord::select('failure_sessions.rake_id', DB::raw('count(*) as count'))
             ->join('failure_sessions', 'failure_records.session_id', '=', 'failure_sessions.id')
             ->groupBy('failure_sessions.rake_id');
@@ -56,7 +72,6 @@ class Dashboard extends Component
             $rakeQ->whereDate('failure_records.timestamp', '<=', $this->dateTo);
         }
 
-        // Pareto: desc by count, then asc by rake_id (numeric)
         $sorted = $rakeQ->get()->sort(function ($a, $b) {
             if ($b->count !== $a->count) {
                 return $b->count - $a->count;
@@ -64,9 +79,9 @@ class Dashboard extends Component
             return (int) $a->rake_id - (int) $b->rake_id;
         })->values();
 
-        $this->activeRakes    = $sorted->count();
-        $this->perRake        = $sorted->toArray();
-        $this->chartRakeData  = $sorted->map(fn($r) => [
+        $this->activeRakes   = $sorted->count();
+        $this->perRake       = $sorted->toArray();
+        $this->chartRakeData = $sorted->map(fn($r) => [
             'name' => 'TS-' . str_pad((int) $r->rake_id, 2, '0', STR_PAD_LEFT),
             'y'    => (int) $r->count,
         ])->values()->toArray();
@@ -83,8 +98,8 @@ class Dashboard extends Component
             $equipQ->whereDate('timestamp', '<=', $this->dateTo);
         }
 
-        $equipRows          = $equipQ->get();
-        $this->perEquipment = $equipRows->toArray();
+        $equipRows            = $equipQ->get();
+        $this->perEquipment   = $equipRows->toArray();
         $this->chartEquipData = $equipRows->map(fn($e) => [
             'name' => $e->equipment_name,
             'y'    => (int) $e->count,
@@ -100,7 +115,7 @@ class Dashboard extends Component
             $classQ->whereDate('timestamp', '<=', $this->dateTo);
         }
 
-        $classData = $classQ->get();
+        $classData               = $classQ->get();
         $this->perClassification = $classData->toArray();
         $this->heavyFaultCount   = (int) $classData->where('classification', 'Heavy')->sum('count');
         $this->chartClassData    = $classData->map(fn($c) => [
@@ -112,13 +127,6 @@ class Dashboard extends Component
             classData: $this->chartClassData,
             equipData: $this->chartEquipData,
         );
-    }
-
-    public function resetFilter(): void
-    {
-        $this->dateFrom = '';
-        $this->dateTo   = '';
-        $this->loadData();
     }
 
     public function render()

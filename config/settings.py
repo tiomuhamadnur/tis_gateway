@@ -190,6 +190,8 @@ def load_from_env():
     val = os.getenv("CLOUD_API_URL")
     if val:
         config.cloud.api_base_url = val
+    val = os.getenv("CLOUD_ENABLED")
+    if val and val.lower() in ("1", "true", "yes"):
         config.cloud.enabled = True
     val = os.getenv("LOG_LEVEL")
     if val:

@@ -328,23 +328,23 @@ FAULT_CLASS_BY_RANGE = [
 # NOTCH / COMMAND CODE → Label
 # ═════════════════════════════════════════════════════════════════
 NOTCH_MAP: Dict[int, str] = {
-    0x00: "EB",         # Emergency Brake
-    0x01: "Neutral",    # Neutral position
-    0x02: "B8",         # Brake notch 8 (max brake)
-    0x03: "B7",
-    0x04: "B6",
-    0x05: "B5",
-    0x06: "B4",
-    0x07: "B3",
-    0x08: "B2",
-    0x09: "B1",         # Brake notch 1 (min brake)
-    0x10: "N",          # Neutral traction
-    0x11: "P1",         # Power notch 1 (min power)
-    0x12: "P2",
-    0x13: "P3",
-    0x14: "P4",         # Power notch 4 (max power)
-    0x15: "A_B6",       # ATO automatic brake notch 6
-    0x16: "A_P16",      # ATO automatic power notch 16
+    # ── Manual / fallback ───────────────────────────────────────────
+    0x00: "EB",         # Emergency Brake  (C: depot PCAP byte[9]=0x00)
+
+    # ── ATO Power notches (byte[9] = notch level decimal) ───────────
+    0x04: "A_P4",       # ATO Power notch 4   (inferred: 0x04=4)
+    0x10: "A_P16",      # ATO Power notch 16  (inferred: 0x10=16 decimal)
+
+    # ── ATO Brake notches (byte[9] = 0x80 + brake level) ────────────
+    0x80: "Neutral",    # ATO Neutral / Coast  (C: Block-10 comparison)
+    0x81: "A_B1",       # ATO Brake 1  (pattern: 0x80+1, observed in PTU)
+    0x82: "A_B2",       # ATO Brake 2  (pattern: 0x80+2)
+    0x83: "A_B3",       # ATO Brake 3  (pattern: 0x80+3)
+    0x84: "A_B4",       # ATO Brake 4  (pattern: 0x80+4)
+    0x85: "A_B5",       # ATO Brake 5  (pattern: 0x80+5, observed in PTU)
+    0x86: "A_B6",       # ATO Brake 6  (pattern: 0x80+6, observed in PTU)
+    0x87: "A_B7",       # ATO Brake 7  (pattern: 0x80+7)
+    0x88: "A_B8",       # ATO Brake 8  (pattern: 0x80+8)
 }
 
 

@@ -93,11 +93,12 @@ cp .env.example .env
 Edit `.env`:
 
 ```env
-TIS_HOST=192.168.x.x   # IP CCU/MON kereta (ganti dari 127.0.0.1)
+TIS_HOST=192.168.x.x        # IP CCU/MON kereta
 OUTPUT_DIR=./output
 CLOUD_API_URL=http://127.0.0.1:8000
 TIS_API_KEY=tiomuhamadnur
-LOG_LEVEL=INFO
+CLOUD_ENABLED=true           # true = upload otomatis tiap run
+LOG_LEVEL=DEBUG              # DEBUG untuk development, INFO untuk produksi
 ```
 
 ### 2. Laravel CMS
@@ -118,6 +119,17 @@ php artisan serve   # berjalan di http://127.0.0.1:8000
 
 ## Cara Pakai
 
+### Kontrol Upload
+
+Upload ke CMS dikontrol lewat dua cara (keduanya bisa dipakai bersamaan):
+
+| Cara | Kapan dipakai |
+|---|---|
+| `CLOUD_ENABLED=true` di `.env` | Default on/off per environment (development vs produksi) |
+| Flag `--upload` saat runtime | Override sesaat tanpa ubah `.env` |
+
+Upload aktif jika **salah satu** bernilai true. Untuk nonaktifkan sementara saat `.env` sudah set `CLOUD_ENABLED=true`, hapus atau ubah nilainya ke `false`.
+
 ### Command Line Options
 
 | Opsi | Tipe | Default | Keterangan |
@@ -129,19 +141,30 @@ php artisan serve   # berjalan di http://127.0.0.1:8000
 | `--output-dir` | str | `./output` | Direktori output file |
 | `--no-csv` | flag | — | Skip export CSV |
 | `--no-pdf` | flag | — | Skip export PDF |
-| `--upload` | flag | — | Aktifkan upload ke CMS |
+| `--upload` | flag | — | Aktifkan upload ke CMS (override `.env`) |
 | `--raw` | flag | — | Simpan raw bytes (debug) |
 
 ### Contoh Penggunaan
 
+**Setup `.env` development (upload aktif secara default):**
+
+```env
+TIS_HOST=192.168.1.1
+CLOUD_API_URL=http://127.0.0.1:8000
+CLOUD_ENABLED=true
+LOG_LEVEL=DEBUG
+```
+
 | Skenario | Perintah |
 |---|---|
-| Paling umum — colok LAN, jalankan | `python main.py --upload` |
-| Rake ID tidak terdeteksi otomatis | `python main.py --rake-id 5 --upload` |
-| Override IP TIS secara eksplisit | `python main.py --host 192.168.1.100 --upload` |
-| Hanya lokal, tanpa upload ke CMS | `python main.py` |
-| Hanya CSV, skip PDF | `python main.py --no-pdf --upload` |
-| Test dengan mock server | `python tests/mock_tis.py` lalu `python main.py --host 127.0.0.1` |
+| Normal — colok LAN ke TIS, jalankan | `python main.py` |
+| Rake ID tidak terdeteksi otomatis | `python main.py --rake-id 5` |
+| Override IP TIS sementara | `python main.py --host 192.168.1.100` |
+| Hanya export lokal, tanpa upload | Set `CLOUD_ENABLED=false` di `.env` |
+| Upload sesaat tanpa ubah `.env` | `python main.py --upload` |
+| Hanya CSV, skip PDF | `python main.py --no-pdf` |
+| Debug raw bytes per record | `python main.py --raw` |
+| Test dengan mock TIS server | `python tests/mock_tis.py` lalu `python main.py --host 127.0.0.1` |
 
 ---
 
@@ -154,7 +177,7 @@ php artisan serve   # berjalan di http://127.0.0.1:8000
 | 3. Dataset B | CMD `0x34` | 6 | Download dataset tambahan |
 | 4. Failure records | CMD `0x36` | 40 × 3 poll | Download 200 failure records (5 record/page) |
 | 5. Export | — | — | Generate CSV dan/atau PDF ke `./output/` |
-| 6. Upload | HTTP POST | — | Kirim JSON + file ke Laravel jika `--upload` |
+| 6. Upload | HTTP POST | — | Kirim JSON + file ke Laravel jika `CLOUD_ENABLED=true` atau `--upload` |
 
 ### Nama File Output
 
