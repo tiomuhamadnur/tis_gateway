@@ -12,6 +12,7 @@
         "concurrently": "^9.0.1",
         "datatables.net": "^2.3.8",
         "datatables.net-dt": "^2.3.8",
+        "flatpickr": "^4.6.13",
         "highcharts": "^12.6.0",
         "jquery": "^4.0.0",
         "laravel-vite-plugin": "^1.0",

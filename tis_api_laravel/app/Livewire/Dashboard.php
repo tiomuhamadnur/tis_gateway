@@ -16,13 +16,19 @@ class Dashboard extends Component
     public array $perRake = [];
     public array $perEquipment = [];
     public array $perClassification = [];
+    public array $perCar = [];
     public array $chartRakeData = [];
     public array $chartClassData = [];
     public array $chartEquipData = [];
+    public array $chartCarData = [];
 
     // Internal filter state (set by applyFilter / resetFilter)
     private string $dateFrom = '';
     private string $dateTo = '';
+    private ?int $selectedRake = null;
+    private ?int $selectedCar = null;
+    private ?string $selectedClassification = null;
+    private ?string $selectedEquipment = null;
 
     public function mount(): void
     {
@@ -40,6 +46,34 @@ class Dashboard extends Component
     {
         $this->dateFrom = '';
         $this->dateTo   = '';
+        $this->selectedRake = null;
+        $this->selectedCar = null;
+        $this->selectedClassification = null;
+        $this->selectedEquipment = null;
+        $this->loadData();
+    }
+
+    public function filterByRake(int $rakeId): void
+    {
+        $this->selectedRake = $rakeId;
+        $this->loadData();
+    }
+
+    public function filterByCar(int $carNo): void
+    {
+        $this->selectedCar = $carNo;
+        $this->loadData();
+    }
+
+    public function filterByClassification(string $classification): void
+    {
+        $this->selectedClassification = $classification;
+        $this->loadData();
+    }
+
+    public function filterByEquipment(string $equipmentCode): void
+    {
+        $this->selectedEquipment = $equipmentCode;
         $this->loadData();
     }
 
@@ -71,6 +105,15 @@ class Dashboard extends Component
         if ($this->dateTo) {
             $rakeQ->whereDate('failure_records.timestamp', '<=', $this->dateTo);
         }
+        if ($this->selectedCar) {
+            $rakeQ->where('failure_records.car_no', $this->selectedCar);
+        }
+        if ($this->selectedClassification) {
+            $rakeQ->where('failure_records.classification', $this->selectedClassification);
+        }
+        if ($this->selectedEquipment) {
+            $rakeQ->where('failure_records.equipment_code', $this->selectedEquipment);
+        }
 
         $sorted = $rakeQ->get()->sort(function ($a, $b) {
             if ($b->count !== $a->count) {
@@ -97,12 +140,51 @@ class Dashboard extends Component
         if ($this->dateTo) {
             $equipQ->whereDate('timestamp', '<=', $this->dateTo);
         }
+        if ($this->selectedRake) {
+            $equipQ->join('failure_sessions', 'failure_records.session_id', '=', 'failure_sessions.id')
+                   ->where('failure_sessions.rake_id', $this->selectedRake);
+        }
+        if ($this->selectedCar) {
+            $equipQ->where('car_no', $this->selectedCar);
+        }
+        if ($this->selectedClassification) {
+            $equipQ->where('classification', $this->selectedClassification);
+        }
 
         $equipRows            = $equipQ->get();
         $this->perEquipment   = $equipRows->toArray();
         $this->chartEquipData = $equipRows->map(fn($e) => [
             'name' => $e->equipment_name,
             'y'    => (int) $e->count,
+        ])->values()->toArray();
+
+        // Failures per car
+        $carQ = FailureRecord::select('car_no', DB::raw('count(*) as count'))
+            ->groupBy('car_no')
+            ->orderByDesc('count');
+
+        if ($this->dateFrom) {
+            $carQ->whereDate('timestamp', '>=', $this->dateFrom);
+        }
+        if ($this->dateTo) {
+            $carQ->whereDate('timestamp', '<=', $this->dateTo);
+        }
+        if ($this->selectedRake) {
+            $carQ->join('failure_sessions', 'failure_records.session_id', '=', 'failure_sessions.id')
+                 ->where('failure_sessions.rake_id', $this->selectedRake);
+        }
+        if ($this->selectedClassification) {
+            $carQ->where('classification', $this->selectedClassification);
+        }
+        if ($this->selectedEquipment) {
+            $carQ->where('equipment_code', $this->selectedEquipment);
+        }
+
+        $carRows            = $carQ->get();
+        $this->perCar       = $carRows->toArray();
+        $this->chartCarData = $carRows->map(fn($c) => [
+            'name' => 'Car ' . $c->car_no,
+            'y'    => (int) $c->count,
         ])->values()->toArray();
 
         $classQ = FailureRecord::select('classification', DB::raw('count(*) as count'))
@@ -113,6 +195,16 @@ class Dashboard extends Component
         }
         if ($this->dateTo) {
             $classQ->whereDate('timestamp', '<=', $this->dateTo);
+        }
+        if ($this->selectedRake) {
+            $classQ->join('failure_sessions', 'failure_records.session_id', '=', 'failure_sessions.id')
+                   ->where('failure_sessions.rake_id', $this->selectedRake);
+        }
+        if ($this->selectedCar) {
+            $classQ->where('car_no', $this->selectedCar);
+        }
+        if ($this->selectedEquipment) {
+            $classQ->where('equipment_code', $this->selectedEquipment);
         }
 
         $classData               = $classQ->get();
@@ -126,6 +218,7 @@ class Dashboard extends Component
             rakeData:  $this->chartRakeData,
             classData: $this->chartClassData,
             equipData: $this->chartEquipData,
+            carData:   $this->chartCarData,
         );
     }
 

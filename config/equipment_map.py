@@ -328,23 +328,58 @@ FAULT_CLASS_BY_RANGE = [
 # NOTCH / COMMAND CODE → Label
 # ═════════════════════════════════════════════════════════════════
 NOTCH_MAP: Dict[int, str] = {
-    # ── Manual / fallback ───────────────────────────────────────────
-    0x00: "EB",         # Emergency Brake  (C: depot PCAP byte[9]=0x00)
+    # ── Emergency Brake ─────────────────────────────────────────────
+    # C: depot PCAP byte[9]=0x00; Data Recorder TEXT17 bit7=657R wire
+    0x00: "EB",
 
-    # ── ATO Power notches (byte[9] = notch level decimal) ───────────
-    0x04: "A_P4",       # ATO Power notch 4   (inferred: 0x04=4)
-    0x10: "A_P16",      # ATO Power notch 16  (inferred: 0x10=16 decimal)
+    # ── ATO Power notches (byte[9] = ATO step, 1–16) ────────────────
+    # Source: Attachment 10 Table 3.8.2.3-1 TEXT49 "17 levels from 0 to 16"
+    # and Data Recorder TEXT24 "VOBC Powering/Braking Step (0, 1 to 16 steps)"
+    # Encoding: A_Pn → byte value = n decimal (P4=0x04, P16=0x10 confirmed)
+    0x01: "A_P1",
+    0x02: "A_P2",
+    0x03: "A_P3",
+    0x04: "A_P4",       # C: confirmed from PTU comparison
+    0x05: "A_P5",
+    0x06: "A_P6",
+    0x07: "A_P7",
+    0x08: "A_P8",
+    0x09: "A_P9",
+    0x0A: "A_P10",
+    0x0B: "A_P11",
+    0x0C: "A_P12",
+    0x0D: "A_P13",
+    0x0E: "A_P14",
+    0x0F: "A_P15",
+    0x10: "A_P16",      # C: confirmed from PTU comparison (0x10=16 decimal)
 
-    # ── ATO Brake notches (byte[9] = 0x80 + brake level) ────────────
-    0x80: "Neutral",    # ATO Neutral / Coast  (C: Block-10 comparison)
-    0x81: "A_B1",       # ATO Brake 1  (pattern: 0x80+1, observed in PTU)
-    0x82: "A_B2",       # ATO Brake 2  (pattern: 0x80+2)
-    0x83: "A_B3",       # ATO Brake 3  (pattern: 0x80+3)
-    0x84: "A_B4",       # ATO Brake 4  (pattern: 0x80+4)
-    0x85: "A_B5",       # ATO Brake 5  (pattern: 0x80+5, observed in PTU)
-    0x86: "A_B6",       # ATO Brake 6  (pattern: 0x80+6, observed in PTU)
-    0x87: "A_B7",       # ATO Brake 7  (pattern: 0x80+7)
-    0x88: "A_B8",       # ATO Brake 8  (pattern: 0x80+8)
+    # ── ATO Neutral / Brake notches (byte[9] = 0x80 + level) ────────
+    # Source: Data Recorder TEXT18 bit7=Neutral (657S wire) = 0x80
+    # Brake range: 0x80+brake_level; confirmed up to B6 from PTU PCAP.
+    # CDR_F Fig 3-28-1 shows "A B14" as example → upper limit at least B14.
+    # CDR_F TEXT49 = 0-16 (17 levels) → theoretically up to B16.
+    0x80: "Neutral",    # C: Block-10 comparison (bit7 from 657S Neutral wire)
+    0x81: "A_B1",       # ATO Brake 1 (lightest)
+    0x82: "A_B2",
+    0x83: "A_B3",
+    0x84: "A_B4",
+    0x85: "A_B5",       # C: observed in PTU comparison
+    0x86: "A_B6",       # C: observed in PTU comparison
+    0x87: "A_B7",
+    0x88: "A_B8",
+    0x89: "A_B9",
+    0x8A: "A_B10",
+    0x8B: "A_B11",
+    0x8C: "A_B12",
+    0x8D: "A_B13",
+    0x8E: "A_B14",      # E: CDR_F Fig 3-28-1 example "A B14"
+    0x8F: "A_B15",      # E: extrapolated from CDR_F TEXT49 range (0-16)
+    0x90: "A_B16",      # E: extrapolated from CDR_F TEXT49 range (0-16)
+
+    # ── Manual mode notches — encoding UNKNOWN (GAP-2) ───────────────
+    # DDU shows "M P4" (Manual Power 4, max) and "M B7" (Manual Brake 7, max)
+    # Wire signals: P1-P4 via 648A-D (4-wire binary), B1-B7 via 648E-G (Gray code)
+    # Byte[9] encoding for manual mode not confirmed — need manual PCAP to close GAP-2.
 }
 
 

@@ -158,9 +158,20 @@ class CloudUploader:
             try:
                 req  = urllib.request.Request(url, data=body, headers=headers, method="POST")
                 with urllib.request.urlopen(req, timeout=self.timeout) as resp:
-                    status = resp.status
+                    status    = resp.status
+                    body_text = resp.read().decode("utf-8", errors="replace")
                     if 200 <= status < 300:
-                        log.info(f"Upload berhasil — HTTP {status}")
+                        try:
+                            resp_data = json.loads(body_text)
+                            if resp_data.get("status") == "duplicate":
+                                log.info(
+                                    f"Session duplikat — sudah diupload sebelumnya "
+                                    f"(session_id={resp_data.get('session_id')})"
+                                )
+                            else:
+                                log.info(f"Upload berhasil — HTTP {status}")
+                        except (json.JSONDecodeError, AttributeError):
+                            log.info(f"Upload berhasil — HTTP {status}")
                         return True
                     else:
                         log.warning(f"Upload gagal — HTTP {status} (attempt {attempt})")

@@ -8,7 +8,7 @@ Memisahkan header/checksum dari payload sebelum dikirim ke RecordParser.
 from dataclasses import dataclass
 from typing import Optional, List
 
-from utils.checksum import verify_checksum
+from utils.checksum import verify_checksum, probe_algorithms
 from utils.logger import get_logger
 
 log = get_logger(__name__)
@@ -79,10 +79,28 @@ class ResponseParser:
         seq  = (data[2] << 8) | data[3]
         page = (data[6] << 8) | data[7]
 
-        # Verifikasi checksum (algoritma masih hipotesis — gagal = debug saja, tidak blokir)
-        ck_ok = verify_checksum(data)
-        if not ck_ok:
-            log.debug("Checksum belum cocok CMD=0x%02X seq=%d (algoritma belum dikonfirmasi)", cmd, seq)
+        # Log raw packet untuk debug session (GAP-1: reverse-engineer checksum)
+        if log.isEnabledFor(10):  # DEBUG = 10
+            hex_str = data.hex()
+            ck_bytes = f"{data[-2]:02X}{data[-1]:02X}"
+            log.debug(
+                "RAW CMD=0x%02X seq=%d len=%d ck_bytes=%s | hex=%s",
+                cmd, seq, len(data), ck_bytes, hex_str,
+            )
+
+        # Verifikasi checksum — probe semua algoritma yang dikenal
+        ck_ok   = verify_checksum(data)
+        probes  = probe_algorithms(data)
+        matched = [name for name, ok in probes.items() if ok]
+        if ck_ok:
+            log.debug("Checksum OK (sum16) CMD=0x%02X seq=%d", cmd, seq)
+        else:
+            log.debug(
+                "Checksum mismatch CMD=0x%02X seq=%d | expected=0x%02X%02X | "
+                "algoritma match: %s",
+                cmd, seq, data[-2], data[-1],
+                matched if matched else "NONE",
+            )
 
         payload = data[HEADER_SIZE:-CHECKSUM_SIZE]
 

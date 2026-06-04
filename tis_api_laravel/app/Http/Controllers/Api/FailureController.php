@@ -50,6 +50,20 @@ class FailureController extends Controller
             'records.*.overhead_v'       => 'required|integer|min:0',
         ]);
 
+        // Duplicate detection: same rake_id + read_time = same download session
+        $existing = Session::where('rake_id', (string) $request->input('rake_id'))
+            ->where('read_time', $request->input('read_time'))
+            ->first();
+
+        if ($existing) {
+            return response()->json([
+                'session_id' => $existing->session_id,
+                'received'   => $existing->total_records,
+                'status'     => 'duplicate',
+                'message'    => 'Session ini sudah diupload sebelumnya.',
+            ], 200);
+        }
+
         $sessionId = Str::uuid()->toString();
 
         $records = $request->input('records');

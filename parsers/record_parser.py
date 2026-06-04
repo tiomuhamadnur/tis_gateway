@@ -145,14 +145,19 @@ class FailureRecord:
         """Satu baris ringkas untuk log DEBUG — format mudah dibaca manusia dan Claude."""
         return (
             "[REC] blk=%d ts=%s car=%d occ=%d tid=%s loc=%d "
-            "eq=%d fault=%d notch=%s spd=%d ov=%d "
-            "| raw=%s"
+            "eq=%d/%s fault=%d sub=0x%02X notch=0x%02X(%s) spd=%d ov=%d "
+            "| b6=0x%02X b10=0x%02X raw=%s"
         ) % (
             self.block_no,
             self.timestamp.strftime("%y%m%d_%H%M%S"),
             self.car_no, self.occur_recover, self.train_id_str,
-            self.location_m, self.equipment_code, self.fault_code,
-            self.notch_label, self.speed_kmh, self.overhead_v,
+            self.location_m,
+            self.equipment_code, self.equipment_name,
+            self.fault_code, self.fault_sub,
+            self.notch_byte, self.notch_label,
+            self.speed_kmh, self.overhead_v,
+            self.raw_bytes[6] if len(self.raw_bytes) > 6 else 0,
+            self.raw_bytes[10] if len(self.raw_bytes) > 10 else 0,
             self.raw_bytes.hex(),
         )
 

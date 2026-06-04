@@ -1,10 +1,96 @@
 @import 'tailwindcss';
+@import 'flatpickr/dist/flatpickr.css';
+@import 'datatables.net-dt/css/dataTables.dataTables.css';
 @import '../../vendor/livewire/flux/dist/flux.css';
 
 @source "../views";
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../vendor/livewire/flux-pro/stubs/**/*.blade.php';
 @source '../../vendor/livewire/flux/stubs/**/*.blade.php';
+
+@layer utilities {
+    .dt-center {
+        @apply text-center;
+    }
+
+    .table-compact {
+        font-size: 0.8rem !important;
+        line-height: 1.25 !important;
+    }
+
+    .table-compact th,
+    .table-compact td {
+        @apply px-2 py-2 align-top;
+        font-size: 0.78rem !important;
+        line-height: 1.2 !important;
+    }
+
+    .table-compact th {
+        @apply text-[10px] uppercase tracking-[0.18em] text-zinc-500;
+    }
+
+    .table-compact td {
+        @apply text-[11px] text-zinc-700 dark:text-zinc-200;
+    }
+
+    .table-compact .badge-nowrap {
+        white-space: nowrap;
+        font-size: 0.72rem;
+        line-height: 1.2;
+    }
+
+    .table-compact.dataTable th,
+    .table-compact.dataTable td {
+        padding: 0.5rem 0.75rem !important;
+    }
+
+    .table-compact.dataTable th {
+        white-space: nowrap;
+    }
+
+    .table-compact tbody td {
+        white-space: normal;
+    }
+
+    .table-compact td.no-wrap {
+        white-space: nowrap;
+    }
+
+    .table-compact td.pair-info {
+        white-space: nowrap;
+    }
+
+    .table-compact td.pair-info .allow-wrap {
+        white-space: normal;
+    }
+
+    .login-card {
+        @apply rounded-3xl border border-zinc-200/80 bg-white/95 p-8 shadow-2xl backdrop-blur-sm dark:border-zinc-800/80 dark:bg-zinc-950/95 dark:text-zinc-100;
+    }
+
+    .login-link {
+        @apply text-blue-600 hover:text-blue-700 dark:text-blue-400;
+    }
+}
+
+#failures-table.dataTable tbody tr {
+    border-bottom: 1px solid rgba(148,163,184,0.16);
+}
+
+#failures-table.dataTable thead th {
+    border-bottom: 1px solid rgba(148,163,184,0.16);
+}
+
+#failures-table.dataTables_wrapper .dataTables_info,
+#failures-table.dataTables_wrapper .dataTables_paginate {
+    font-size: 0.82rem;
+}
+
+@layer base {
+    body {
+        @apply bg-zinc-50 text-zinc-950 antialiased dark:bg-zinc-950 dark:text-zinc-100;
+    }
+}
 
 @custom-variant dark (&:where(.dark, .dark *));
 

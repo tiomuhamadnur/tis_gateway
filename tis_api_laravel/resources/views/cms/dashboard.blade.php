@@ -113,21 +113,36 @@
 
     {{-- Charts Row --}}
     <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div class="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
-            <h3 class="mb-4 text-sm font-semibold text-zinc-700 dark:text-zinc-300">Failures per Trainset</h3>
-            <div id="rake-chart" class="h-64"></div>
+        <div class="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-zinc-700 dark:bg-zinc-800">
+            <h3 class="mb-4 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-600 dark:text-zinc-400">Failures per Trainset</h3>
+            <div class="h-64 rounded-3xl border border-zinc-100 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-900">
+                <div id="rake-chart" class="h-full"></div>
+            </div>
         </div>
 
-        <div class="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
-            <h3 class="mb-4 text-sm font-semibold text-zinc-700 dark:text-zinc-300">Failures by Classification</h3>
-            <div id="classification-chart" class="h-64"></div>
+        <div class="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-zinc-700 dark:bg-zinc-800">
+            <h3 class="mb-4 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-600 dark:text-zinc-400">Failures by Classification</h3>
+            <div class="h-64 rounded-3xl border border-zinc-100 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-900">
+                <div id="classification-chart" class="h-full"></div>
+            </div>
         </div>
     </div>
 
-    {{-- Top Equipment --}}
-    <div class="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
-        <h3 class="mb-4 text-sm font-semibold text-zinc-700 dark:text-zinc-300">Top 10 Equipment by Failures</h3>
-        <div id="equipment-chart" class="h-64"></div>
+    {{-- Second Charts Row --}}
+    <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div class="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-zinc-700 dark:bg-zinc-800">
+            <h3 class="mb-4 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-600 dark:text-zinc-400">Failures per Car</h3>
+            <div class="h-64 rounded-3xl border border-zinc-100 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-900">
+                <div id="car-chart" class="h-full"></div>
+            </div>
+        </div>
+
+        <div class="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-zinc-700 dark:bg-zinc-800">
+            <h3 class="mb-4 text-sm font-semibold uppercase tracking-[0.18em] text-zinc-600 dark:text-zinc-400">Top 10 Equipment by Failures</h3>
+            <div class="h-64 rounded-3xl border border-zinc-100 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-900">
+                <div id="equipment-chart" class="h-full"></div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -141,16 +156,27 @@
     const _initRake  = @json($chartRakeData);
     const _initClass = @json($chartClassData);
     const _initEquip = @json($chartEquipData);
+    const _initCar   = @json($chartCarData);
 
     function renderCharts(data) {
-        if (typeof Highcharts === 'undefined' || !document.getElementById('rake-chart')) return;
+        if (typeof Highcharts === 'undefined') return;
+
+        // Set Highcharts options
+        Highcharts.setOptions({
+            credits: { enabled: false },
+            accessibility: { enabled: false }
+        });
+
+        // Set license for development
+        Highcharts.licenseKey = 'Non-commercial';
 
         const rake  = data ? data.rakeData  : _initRake;
         const cls   = data ? data.classData : _initClass;
         const equip = data ? data.equipData : _initEquip;
+        const car   = data ? data.carData   : _initCar;
 
         // Destroy any existing instances before re-creating
-        ['rake', 'classification', 'equipment'].forEach(function (key) {
+        ['rake', 'classification', 'equipment', 'car'].forEach(function (key) {
             if (window._tisCharts[key]) {
                 try { window._tisCharts[key].destroy(); } catch (e) {}
                 window._tisCharts[key] = null;
@@ -166,6 +192,27 @@
             credits: { enabled: false },
             legend: { enabled: false },
             accessibility: { enabled: false },
+            plotOptions: {
+                column: {
+                    dataLabels: {
+                        enabled: true,
+                        format: '{y}',
+                        style: {
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            textOutline: 'none'
+                        }
+                    },
+                    point: {
+                        events: {
+                            click: function() {
+                                const rakeId = parseInt(this.category.replace('TS-', ''));
+                                @this.call('filterByRake', rakeId);
+                            }
+                        }
+                    }
+                }
+            }
         });
 
         window._tisCharts.classification = Highcharts.chart('classification-chart', {
@@ -174,6 +221,58 @@
             series: [{ name: 'Count', colorByPoint: true, data: cls }],
             credits: { enabled: false },
             accessibility: { enabled: false },
+            plotOptions: {
+                pie: {
+                    dataLabels: {
+                        enabled: true,
+                        format: '<b>{point.name}</b>: {point.y} ({point.percentage:.1f}%)',
+                        style: {
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            textOutline: 'none'
+                        }
+                    },
+                    point: {
+                        events: {
+                            click: function() {
+                                @this.call('filterByClassification', this.name);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        window._tisCharts.car = Highcharts.chart('car-chart', {
+            chart: { type: 'column', backgroundColor: 'transparent' },
+            title: { text: null },
+            xAxis: { categories: car.map(function(d) { return d.name; }), crosshair: true },
+            yAxis: { min: 0, title: { text: 'Failures' }, allowDecimals: false },
+            series: [{ name: 'Failures', data: car.map(function(d) { return d.y; }), color: '#10b981' }],
+            credits: { enabled: false },
+            legend: { enabled: false },
+            accessibility: { enabled: false },
+            plotOptions: {
+                column: {
+                    dataLabels: {
+                        enabled: true,
+                        format: '{y}',
+                        style: {
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            textOutline: 'none'
+                        }
+                    },
+                    point: {
+                        events: {
+                            click: function() {
+                                const carNo = parseInt(this.category.replace('Car ', ''));
+                                @this.call('filterByCar', carNo);
+                            }
+                        }
+                    }
+                }
+            }
         });
 
         window._tisCharts.equipment = Highcharts.chart('equipment-chart', {
@@ -185,6 +284,26 @@
             credits: { enabled: false },
             legend: { enabled: false },
             accessibility: { enabled: false },
+            plotOptions: {
+                bar: {
+                    dataLabels: {
+                        enabled: true,
+                        format: '{y}',
+                        style: {
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            textOutline: 'none'
+                        }
+                    },
+                    point: {
+                        events: {
+                            click: function() {
+                                @this.call('filterByEquipment', this.category);
+                            }
+                        }
+                    }
+                }
+            }
         });
     }
 

@@ -75,8 +75,8 @@
             </div>
 
             {{-- Right login panel --}}
-            <div class="flex flex-1 items-center justify-center p-8 bg-zinc-900">
-                <div class="w-full max-w-sm">
+            <div class="flex flex-1 items-center justify-center p-8 bg-zinc-950">
+                <div class="w-full max-w-sm px-2">
                     {{-- Mobile logo --}}
                     <div class="flex lg:hidden items-center justify-center gap-3 mb-8">
                         <div class="flex h-9 w-9 items-center justify-center rounded-xl"
@@ -91,8 +91,10 @@
                         </div>
                     </div>
 
-                    <div class="flex flex-col gap-6">
-                        {{ $slot }}
+                    <div class="login-card">
+                        <div class="flex flex-col gap-6">
+                            {{ $slot }}
+                        </div>
                     </div>
                 </div>
             </div>

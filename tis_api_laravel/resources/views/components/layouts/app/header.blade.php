@@ -3,8 +3,8 @@
     <head>
         @include('partials.head')
     </head>
-    <body class="min-h-screen bg-white dark:bg-zinc-800">
-        <flux:header container class="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
+    <body class="min-h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
+        <flux:header container class="border-b border-zinc-200 bg-white/95 backdrop-blur-sm dark:border-zinc-700 dark:bg-zinc-900/95">
             <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" />
 
             <a href="{{ route('dashboard') }}" class="ml-2 mr-5 flex items-center space-x-2 lg:ml-0" wire:navigate>
@@ -15,33 +15,12 @@
                 <flux:navbar.item icon="layout-grid" href="{{ route('dashboard') }}" :current="request()->routeIs('dashboard')" wire:navigate>
                     Dashboard
                 </flux:navbar.item>
+                <flux:navbar.item icon="chart-bar" href="{{ route('failures.index') }}" :current="request()->routeIs('failures.*')" wire:navigate>
+                    Failure Records
+                </flux:navbar.item>
             </flux:navbar>
 
             <flux:spacer />
-
-            <flux:navbar class="mr-1.5 space-x-0.5 py-0!">
-                <flux:tooltip content="Search" position="bottom">
-                    <flux:navbar.item class="!h-10 [&>div>svg]:size-5" icon="magnifying-glass" href="#" label="Search" />
-                </flux:tooltip>
-                <flux:tooltip content="Repository" position="bottom">
-                    <flux:navbar.item
-                        class="h-10 max-lg:hidden [&>div>svg]:size-5"
-                        icon="folder-git-2"
-                        href="https://github.com/laravel/livewire-starter-kit"
-                        target="_blank"
-                        label="Repository"
-                    />
-                </flux:tooltip>
-                <flux:tooltip content="Documentation" position="bottom">
-                    <flux:navbar.item
-                        class="h-10 max-lg:hidden [&>div>svg]:size-5"
-                        icon="book-open-text"
-                        href="https://laravel.com/docs/starter-kits"
-                        target="_blank"
-                        label="Documentation"
-                    />
-                </flux:tooltip>
-            </flux:navbar>
 
             <!-- Desktop User Menu -->
             <flux:dropdown position="top" align="end">
@@ -101,18 +80,17 @@
                     <flux:navlist.item icon="layout-grid" href="{{ route('dashboard') }}" :current="request()->routeIs('dashboard')" wire:navigate>
                         Dashboard
                     </flux:navlist.item>
+                    <flux:navlist.item icon="chart-bar" href="{{ route('failures.index') }}" :current="request()->routeIs('failures.*')" wire:navigate>
+                        Failure Records
+                    </flux:navlist.item>
                 </flux:navlist.group>
             </flux:navlist>
 
             <flux:spacer />
 
             <flux:navlist variant="outline">
-                <flux:navlist.item icon="folder-git-2" href="https://github.com/laravel/livewire-starter-kit" target="_blank">
-                    Repository
-                </flux:navlist.item>
-
-                <flux:navlist.item icon="book-open-text" href="https://laravel.com/docs/starter-kits" target="_blank">
-                    Documentation
+                <flux:navlist.item icon="cog-6-tooth" href="{{ route('settings.profile') }}" wire:navigate>
+                    Settings
                 </flux:navlist.item>
             </flux:navlist>
         </flux:sidebar>
