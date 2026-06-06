@@ -233,9 +233,21 @@ class TISSession:
     def _do_failure_download(
         self, client: UDPClient
     ) -> Tuple[List[FailureRecord], int]:
+        """
+        Download failure records dari semua page CMD 0x36.
+
+        Dedup signature: raw 20-byte record. TS13 2026-06-05 mengungkap kasus
+        TIS sesekali mengirim payload page-sebelumnya untuk request page baru
+        (10 record duplikat di output), sehingga tiap record di-cek terhadap
+        raw-byte yang sudah pernah dilihat. Page yang semua record-nya duplikat
+        di-skip; block_no tidak naik supaya output tetap kontigu.
+        """
         cfg      = config.session
         records: List[FailureRecord] = []
         pages_ok = 0
+        seen_raws: set = set()
+        dup_pages_skipped = 0
+        partial_dupes     = 0
 
         log.info("[CMD36] Failure records %d pages × %d polls...",
                  cfg.cmd36_pages, cfg.polls_per_page)
@@ -244,19 +256,55 @@ class TISSession:
         for page in range(cfg.cmd36_pages):
             page_records = self._poll_one_page(client, page, block_no)
 
-            if page_records:
-                records.extend(page_records)
-                log.debug(
-                    "[CMD36] page=0x%02x records=%d blk=%d..%d",
-                    page, len(page_records), block_no, block_no + len(page_records) - 1,
-                )
-                block_no += len(page_records)
-                pages_ok += 1
-            else:
+            if not page_records:
                 log.warning("[CMD36] page=0x%02x: tidak ada data", page)
+                continue
 
-        log.info("[CMD36] selesai — total %d records dari %d/%d pages",
-                 len(records), pages_ok, cfg.cmd36_pages)
+            new_records: List[FailureRecord] = []
+            for rec in page_records:
+                if rec.raw_bytes in seen_raws:
+                    continue
+                seen_raws.add(rec.raw_bytes)
+                new_records.append(rec)
+
+            dupes = len(page_records) - len(new_records)
+
+            if dupes == len(page_records):
+                dup_pages_skipped += 1
+                log.warning(
+                    "[CMD36] page=0x%02x: SEMUA %d record duplikat (echo page sebelumnya) — SKIP",
+                    page, len(page_records),
+                )
+                continue
+
+            if dupes:
+                partial_dupes += dupes
+                log.info(
+                    "[CMD36] page=0x%02x: %d/%d record duplikat di-skip",
+                    page, dupes, len(page_records),
+                )
+
+            # parse_payload sudah assign block_no berdasarkan block_start lama;
+            # rebase agar kontigu setelah dedup.
+            for i, rec in enumerate(new_records):
+                rec.block_no = block_no + i
+
+            records.extend(new_records)
+            log.debug(
+                "[CMD36] page=0x%02x records=%d blk=%d..%d",
+                page, len(new_records), block_no, block_no + len(new_records) - 1,
+            )
+            block_no += len(new_records)
+            pages_ok += 1
+
+        summary = "[CMD36] selesai — total %d records dari %d/%d pages" % (
+            len(records), pages_ok, cfg.cmd36_pages,
+        )
+        if dup_pages_skipped or partial_dupes:
+            summary += " (skip %d page penuh duplikat, %d record duplikat parsial)" % (
+                dup_pages_skipped, partial_dupes,
+            )
+        log.info(summary)
         return records, pages_ok
 
     def _poll_one_page(

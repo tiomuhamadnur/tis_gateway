@@ -3,13 +3,15 @@ parsers/record_parser.py
 ========================
 Parse raw bytes CMD 0x36 payload menjadi FailureRecord.
 
-RECORD LAYOUT — 20 bytes per record (confirmed dari PCAP TS5 + cross-ref CSV + moving-train comparison):
+RECORD LAYOUT — 20 bytes per record (confirmed dari PCAP TS5 + TS13 moving-train + cross-ref CSV PTU asli):
   [0-5]   Timestamp BCD (YY MM DD HH MM SS)          — CONFIRMED
-  [6]     ??? (always 0x00 di depot; purpose unknown) — UNKNOWN
-  [7]     Location [m] signed int8                    — CONFIRMED (depot=0 ✓; moving=-66 ✓ dari Block-10 comparison)
-  [8]     Status byte: bit[7:4]=occur/recover          — CONFIRMED (0x00>>4=0,0x11>>4=1)
-  [9]     Notch byte → NOTCH_MAP                      — CONFIRMED (depot=0x00=EB ✓; 0x80=Neutral confirmed)
-  [10]    ??? (always 0x00 di depot; purpose unknown) — UNKNOWN
+  [6-7]   Location [m] signed int16 big-endian        — CONFIRMED (TS13: 0x2173=8563m ✓; 0x1F0F=7951m ✓; 0xFFA7=-89m ✓)
+  [8]     Status byte:                                — CONFIRMED
+            bit[4]=occur/recover (0=Occur, 1=Recover)
+            bit[0]=EB asserted (override notch ke EB)
+            bit[7]=??? (set saat moving, hipotesis)
+  [9]     Notch step byte  → decode_notch()           — CONFIRMED via (b8,b9,b10) tuple
+  [10]    Notch mode byte  → decode_notch()           — CONFIRMED (0x80=Auto/Neutral, 0x40=M_Brake, 0x08=M_Power, 0x00=EB-mode)
   [11]    Car ID (direct: 0x01-0x06 = Car 1-6)        — CONFIRMED
   [12]    Equipment code                               — CONFIRMED
   [13]    Fault sub-index (internal TIS)               — UNCONFIRMED
@@ -32,7 +34,7 @@ from typing import Optional, List
 from parsers.bcd import decode_timestamp, is_valid_timestamp, bcd_byte
 from config.equipment_map import (
     get_equipment_name, get_fault_name,
-    get_notch_label,
+    decode_notch,
 )
 from utils.logger import get_logger
 
@@ -46,11 +48,10 @@ RECORD_SIZE = 20   # bytes per record (termasuk train_id di [18-19])
 # FIELD OFFSETS — verified dari PCAP TS5
 # ─────────────────────────────────────────────
 OFF_TIMESTAMP  = 0   # [C] 6 bytes BCD
-OFF_UNKNOWN6   = 6   # [U] 1 byte, always 0x00 di depot
-OFF_LOCATION   = 7   # [C] 1 byte signed int8 [m] (0 depot; -66 moving, confirmed Block-10)
-OFF_STATUS     = 8   # [C] 1 byte: high-nibble = occur/recover
-OFF_NOTCH      = 9   # [C] 1 byte → NOTCH_MAP (0x00=EB depot; 0x80=Neutral confirmed)
-OFF_UNKNOWN10  = 10  # [U] 1 byte, always 0x00 di depot
+OFF_LOCATION   = 6   # [C] 2 bytes signed int16 BE [m] (TS13 confirmed: 0x2173=8563m, 0xFFA7=-89m)
+OFF_STATUS     = 8   # [C] 1 byte: bit[4]=occur/recover, bit[0]=EB-asserted override
+OFF_NOTCH_STEP = 9   # [C] 1 byte step level (A_Pn: 0x01..0x10; A_Bn: 0x81..0x90; 0x80=Neutral/Manual)
+OFF_NOTCH_MODE = 10  # [C] 1 byte mode (0x80=Auto/Neutral, 0x40=M_Brake, 0x08=M_Power, 0x00=EB-mode)
 OFF_CAR_ID     = 11  # [C] 1 byte direct (0x01-0x06 = Car 1-6)
 OFF_EQUIP      = 12  # [C] 1 byte equipment code
 OFF_FAULT_SUB  = 13  # [U] 1 byte fault sub-index
@@ -76,7 +77,9 @@ class FailureRecord:
     equipment_code: int = 0
     fault_sub: int = 0
     fault_code: int = 0
-    notch_byte: int = 0
+    status_byte: int = 0     # raw byte[8] (bit[4]=occ/rec, bit[0]=EB)
+    notch_step: int = 0      # raw byte[9]
+    notch_mode: int = 0      # raw byte[10]
     speed_kmh: int = 0
     overhead_v: int = 0
     raw_bytes: bytes = b''
@@ -91,7 +94,11 @@ class FailureRecord:
 
     @property
     def notch_label(self) -> str:
-        return get_notch_label(self.notch_byte)
+        return decode_notch(self.status_byte, self.notch_step, self.notch_mode)
+
+    @property
+    def notch_byte(self) -> int:
+        return self.notch_step
 
     @property
     def train_id_str(self) -> str:
@@ -145,8 +152,8 @@ class FailureRecord:
         """Satu baris ringkas untuk log DEBUG — format mudah dibaca manusia dan Claude."""
         return (
             "[REC] blk=%d ts=%s car=%d occ=%d tid=%s loc=%d "
-            "eq=%d/%s fault=%d sub=0x%02X notch=0x%02X(%s) spd=%d ov=%d "
-            "| b6=0x%02X b10=0x%02X raw=%s"
+            "eq=%d/%s fault=%d sub=0x%02X notch=%s spd=%d ov=%d "
+            "| b8=0x%02X b9=0x%02X b10=0x%02X raw=%s"
         ) % (
             self.block_no,
             self.timestamp.strftime("%y%m%d_%H%M%S"),
@@ -154,10 +161,9 @@ class FailureRecord:
             self.location_m,
             self.equipment_code, self.equipment_name,
             self.fault_code, self.fault_sub,
-            self.notch_byte, self.notch_label,
+            self.notch_label,
             self.speed_kmh, self.overhead_v,
-            self.raw_bytes[6] if len(self.raw_bytes) > 6 else 0,
-            self.raw_bytes[10] if len(self.raw_bytes) > 10 else 0,
+            self.status_byte, self.notch_step, self.notch_mode,
             self.raw_bytes.hex(),
         )
 
@@ -215,11 +221,12 @@ class RecordParser:
     def _parse_record(self, raw: bytes, block_no: int) -> FailureRecord:
         """Parse satu record 20 byte."""
         timestamp   = decode_timestamp(raw, OFF_TIMESTAMP)
-        loc_byte    = raw[OFF_LOCATION]
-        location    = loc_byte - 256 if loc_byte > 127 else loc_byte   # signed int8
+        loc_raw     = (raw[OFF_LOCATION] << 8) | raw[OFF_LOCATION + 1]   # uint16 BE
+        location    = loc_raw - 0x10000 if loc_raw >= 0x8000 else loc_raw  # → signed int16
         status      = raw[OFF_STATUS]
         occur       = (status >> 4) & 0x01
-        notch_byte  = raw[OFF_NOTCH]
+        notch_step  = raw[OFF_NOTCH_STEP]
+        notch_mode  = raw[OFF_NOTCH_MODE]
         car_no      = raw[OFF_CAR_ID]                                   # direct: 1-6
         equip_code  = raw[OFF_EQUIP]
         fault_sub   = raw[OFF_FAULT_SUB]
@@ -249,7 +256,9 @@ class RecordParser:
             equipment_code = equip_code,
             fault_sub      = fault_sub,
             fault_code     = fault_code,
-            notch_byte     = notch_byte,
+            status_byte    = status,
+            notch_step     = notch_step,
+            notch_mode     = notch_mode,
             speed_kmh      = speed,
             overhead_v     = overhead_v,
             raw_bytes      = raw,

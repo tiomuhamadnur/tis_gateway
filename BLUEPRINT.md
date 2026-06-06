@@ -116,13 +116,22 @@ Payload structure (102B):
   [1..100] 5 records × 20 bytes
   [101]    End marker    0x03
 
-Record structure (20B, confirmed dari PCAP + CSV cross-ref + moving-train comparison):
+Record structure (20B, confirmed via PCAP TS5 depot + TS13 moving-train + cross-ref CSV PTU asli):
   [0-5]  Timestamp BCD (YY MM DD HH MM SS)
-  [6]    Unknown (always 0x00 di depot)
-  [7]    Location [m] signed int8  ✅ CONFIRMED (0=depot, -66=Block10 moving)
-  [8]    Status: bit[7:4]=occur/recover, bit[3:0]=unknown
-  [9]    Notch byte → NOTCH_MAP  ✅ CONFIRMED (0x00=EB depot; 0x80=Neutral moving)
-  [10]   Unknown (always 0x00 di depot)
+  [6-7]  Location [m] signed int16 big-endian  ✅ CONFIRMED (0x2173=8563m, 0xFFA7=-89m, 0x0000=depot)
+  [8]    Status byte:                          ✅ CONFIRMED
+           bit[4] = occur/recover (0=Occur, 1=Recover)
+           bit[0] = EB asserted (override notch ke EB — wire 657R)
+           bit[7] = ??? (set saat train moving; hipotesis)
+  [9]    Notch step → decode_notch()           ✅ CONFIRMED
+           0x00/0x80 = Neutral (depot/coast)
+           0x01..0x10 = A_P1..A_P16 (ATO Power step)
+           0x81..0x90 = A_B1..A_B16 (ATO Brake step)
+  [10]   Notch mode → decode_notch()           ✅ CONFIRMED
+           0x80 = Auto mode (Neutral/A_P/A_B)
+           0x40 = Manual Brake (M_B; step encoding belum penuh)
+           0x08 = Manual Power (M_P; step encoding belum penuh)
+           0x00 = EB-mode resting (kombinasi dengan b8 bit-0)
   [11]   Car ID direct (0x01-0x06 = Car 1-6)
   [12]   Equipment code
   [13]   Fault sub-index
@@ -142,16 +151,19 @@ class FailureRecord:
     block_no: int           # Nomor urut (Block.No di CSV PTU)
     timestamp: datetime     # Waktu failure (BCD decoded)
     car_no: int             # Nomor car (1-6, direct dari byte[11])
-    occur_recover: int      # 0=Occur, 1=Recover (dari byte[8] >> 4)
+    occur_recover: int      # 0=Occur, 1=Recover (dari byte[8] bit-4)
     train_id: int           # Train Set ID (0xFFFF = depot)
-    location_m: int         # Posisi di track [m] signed
+    location_m: int         # Posisi di track [m] signed int16 BE (bytes[6-7])
     equipment_code: int     # Kode equipment (1-23)
     fault_sub: int          # Sub-index internal TIS
     fault_code: int         # Kode fault numeric
-    notch_byte: int         # Notch/command byte ⚠ field offset belum konfirmasi
+    status_byte: int        # Raw byte[8] (bit-4=occ/rec, bit-0=EB-asserted)
+    notch_step: int         # Raw byte[9] (step level)
+    notch_mode: int         # Raw byte[10] (mode: 0x80=Auto, 0x40=M_B, 0x08=M_P)
     speed_kmh: int          # Kecepatan [km/h]
     overhead_v: int         # Tegangan catenary [V] (raw × 10)
     raw_bytes: bytes        # Raw 20B untuk debugging
+    # notch_label = property → decode_notch(status_byte, notch_step, notch_mode)
 ```
 
 ### 4.2 ParsedPacket Dataclass
@@ -444,14 +456,14 @@ Legend: ✅ Confirmed  ⚠ Best Guess (belum konfirmasi kereta jalan)  ❌ Bug  
 | Byte | Field | Status | Catatan |
 |------|-------|--------|---------|
 | [0-5] | Timestamp BCD | ✅ | Cross-ref CSV: 2026-05-07 16:04:07 ✓ |
-| [6] | Unknown | 🔲 | Selalu 0x00 di depot; purpose tidak diketahui |
-| [7] | Location [m] int8 | ✅ | 0x00=0m depot ✓; 0xBE=-66m moving confirmed Block-10 |
-| [8] hi-nibble | Occur/Recover | ✅ | (byte>>4)&1: 0x00>>4=0(Occur) ✓, 0x11>>4=1(Recover) ✓ |
-| [8] lo-nibble | Unknown | 🔲 | 0x01 untuk semua records yang dilihat; purpose tidak diketahui |
-| [9] | Notch byte | ✅ | 0x00=EB depot ✓; 0x80=Neutral moving confirmed Block-10 |
-| [10] | Unknown | 🔲 | 0x00 depot; 0x80 moving; purpose tidak diketahui |
+| [6-7] | Location [m] int16 BE | ✅ | TS13 2026-06-05: 0x2173=8563m ✓, 0xFFA7=-89m ✓, 0x0000=depot ✓ — diverifikasi 196/196 record |
+| [8] bit-4 | Occur/Recover | ✅ | (byte>>4)&1: 0x00→0(Occur) ✓, 0x11→1(Recover) ✓ |
+| [8] bit-0 | EB asserted (override) | ✅ | TS13: bit-0=1 → notch=EB regardless of [9]/[10] (wire 657R Emergency Brake) |
+| [8] bit-7 | Moving flag (hipotesis) | ⚠ | Set saat train bergerak (lokasi != 0); belum dipakai parser |
+| [9] | Notch step | ✅ | 0x00/0x80=Neutral, 0x01..0x10=A_Pn, 0x81..0x90=A_Bn — TS13 verified |
+| [10] | Notch mode | ✅ | 0x80=Auto, 0x40=Manual Brake, 0x08=Manual Power, 0x00=EB-mode — TS13 verified |
 | [11] | Car ID | ✅ | Direct value 0x01-0x06 = Car 1-6, cross-ref CSV ✓ |
-| [12] | Equipment code | ✅ | 0x09=PA ✓, 0x08=PID ✓, 0x02=ATO ✓ |
+| [12] | Equipment code | ✅ | 0x09=PA ✓, 0x08=PID ✓, 0x02=ATO ✓, 0x14=CCTV ✓ |
 | [13] | Fault sub-index | 🔲 | Ikut dalam output tapi belum di-validate dari manual |
 | [14-15] | Fault code uint16 | ✅ | 0x0326=806 ✓, 0x02BC=700 ✓, 0x00D4=212 ✓ |
 | [16] | Overhead V raw | ✅ | ×10 = Volt: 0x01→10V ✓, 0x08→80V ✓ |
@@ -460,25 +472,22 @@ Legend: ✅ Confirmed  ⚠ Best Guess (belum konfirmasi kereta jalan)  ❌ Bug  
 
 ### 11.3 Prioritas Konfirmasi Berikutnya
 
-Untuk konfirmasi field yang masih ⚠ / 🔲, dibutuhkan **PCAP dari kereta yang sedang bergerak**
-(dalam service, bukan di depo). Field yang paling penting dikonfirmasi:
+Setelah TS13 2026-06-05 (moving train, 200 records vs PTU asli) → semua field utama sudah ✅.
+Sisa yang perlu PCAP tambahan:
 
-1. **Notch [7]** — penting untuk analisa driver behaviour
-2. **Location [9-10]** — sign dan scale factor perlu konfirmasi dengan posisi nyata
-3. **Train ID non-FFFF** — format encoding (BCD atau binary) perlu dicek untuk nilai seperti 1611
-
-Cara paling efisien: jalankan aplikasi dengan `LOG_LEVEL=DEBUG --raw` saat kereta
-dalam service, kirim log ke developer untuk analisa.
+1. **Manual notch step >1** — TS13 hanya lihat M_B1 dan M_P1. Encoding step 2-7 (brake) dan 2-4 (power) belum dikonfirmasi
+2. **byte[8] bit-7** — hipotesis "moving flag"; perlu konfirmasi semantiknya
+3. **Fault sub-index [13]** — selalu 0x0D di sample yang ada; perlu manual cross-ref
 
 ### 11.4 Fitur yang Belum Diimplementasi
 
 | Fitur | Priority | Notes |
 |-------|----------|-------|
-| Notch parsing dari field [7] | Medium | Perlu data moving train dulu |
-| Location scale factor | Medium | Apakah meter langsung atau ada faktor konversi? |
+| Manual notch step >1 mapping | Low | TS13 cuma confirm step 1; tunggu PCAP dengan manual driving aktif |
 | CMD 0x32 metadata parsing | Low | Data didownload tapi tidak diparse |
 | CMD 0x34 dataset B parsing | Low | Data didownload tapi tidak diparse |
 | Mock TIS yang realistic | High | Untuk testing tanpa kereta fisik |
+| Duplicate session detection | Medium | TS13 output punya record ganda di blk 135+ (GAP-4); investigasi root cause |
 
 ---
 

@@ -327,59 +327,37 @@ FAULT_CLASS_BY_RANGE = [
 # ═════════════════════════════════════════════════════════════════
 # NOTCH / COMMAND CODE → Label
 # ═════════════════════════════════════════════════════════════════
+# Encoding actually spans 3 bytes (b8/b9/b10) — bukan satu byte saja.
+# Confirmed via TS13 PCAP (200 records, 19 unique (b8,b9,b10) combos) vs PTU asli.
+#
+# Decoding rule (semua 19 combos cocok 100%):
+#   1. Jika b8 bit-0 = 1 → notch = "EB" (override; berasal dari wire 657R Emergency Brake)
+#   2. Selain itu, decode dari (b9, b10):
+#        b10 = 0x80  → Auto mode      → b9 menentukan: 0x00/0x80=Neutral, 0x01..0x10=A_Pn, 0x81..0x90=A_Bn
+#        b10 = 0x00  → Auto mode juga → b9 menentukan (idem, hanya beda untuk A_Pn/A_Bn yang sesekali muncul)
+#        b10 = 0x40  → Manual Brake   → step di b9 (TS13 hanya lihat M_B1 → step encoding belum penuh dikonfirmasi)
+#        b10 = 0x08  → Manual Power   → step di b9 (TS13 hanya lihat M_P1)
+#
+# Sumber wire:
+#   - 657R (EB asserted)  → b8 bit-0
+#   - 657S (Neutral wire) → b9 bit-7 = 0x80
+#   - ATO step (0..16)    → b9 low nibble + bit-7 untuk brake
+#   - Manual P1-P4        → 648A-D 4-wire binary (b10=0x08 family)
+#   - Manual B1-B7        → 648E-G Gray code (b10=0x40 family)
+
+# Single-byte map (untuk b9-only lookup, backwards-compat dan UI tooltip).
+# Untuk decoding penuh sesuai PTU pakai decode_notch(b8, b9, b10).
 NOTCH_MAP: Dict[int, str] = {
-    # ── Emergency Brake ─────────────────────────────────────────────
-    # C: depot PCAP byte[9]=0x00; Data Recorder TEXT17 bit7=657R wire
-    0x00: "EB",
-
-    # ── ATO Power notches (byte[9] = ATO step, 1–16) ────────────────
-    # Source: Attachment 10 Table 3.8.2.3-1 TEXT49 "17 levels from 0 to 16"
-    # and Data Recorder TEXT24 "VOBC Powering/Braking Step (0, 1 to 16 steps)"
-    # Encoding: A_Pn → byte value = n decimal (P4=0x04, P16=0x10 confirmed)
-    0x01: "A_P1",
-    0x02: "A_P2",
-    0x03: "A_P3",
-    0x04: "A_P4",       # C: confirmed from PTU comparison
-    0x05: "A_P5",
-    0x06: "A_P6",
-    0x07: "A_P7",
-    0x08: "A_P8",
-    0x09: "A_P9",
-    0x0A: "A_P10",
-    0x0B: "A_P11",
-    0x0C: "A_P12",
-    0x0D: "A_P13",
-    0x0E: "A_P14",
-    0x0F: "A_P15",
-    0x10: "A_P16",      # C: confirmed from PTU comparison (0x10=16 decimal)
-
-    # ── ATO Neutral / Brake notches (byte[9] = 0x80 + level) ────────
-    # Source: Data Recorder TEXT18 bit7=Neutral (657S wire) = 0x80
-    # Brake range: 0x80+brake_level; confirmed up to B6 from PTU PCAP.
-    # CDR_F Fig 3-28-1 shows "A B14" as example → upper limit at least B14.
-    # CDR_F TEXT49 = 0-16 (17 levels) → theoretically up to B16.
-    0x80: "Neutral",    # C: Block-10 comparison (bit7 from 657S Neutral wire)
-    0x81: "A_B1",       # ATO Brake 1 (lightest)
-    0x82: "A_B2",
-    0x83: "A_B3",
-    0x84: "A_B4",
-    0x85: "A_B5",       # C: observed in PTU comparison
-    0x86: "A_B6",       # C: observed in PTU comparison
-    0x87: "A_B7",
-    0x88: "A_B8",
-    0x89: "A_B9",
-    0x8A: "A_B10",
-    0x8B: "A_B11",
-    0x8C: "A_B12",
-    0x8D: "A_B13",
-    0x8E: "A_B14",      # E: CDR_F Fig 3-28-1 example "A B14"
-    0x8F: "A_B15",      # E: extrapolated from CDR_F TEXT49 range (0-16)
-    0x90: "A_B16",      # E: extrapolated from CDR_F TEXT49 range (0-16)
-
-    # ── Manual mode notches — encoding UNKNOWN (GAP-2) ───────────────
-    # DDU shows "M P4" (Manual Power 4, max) and "M B7" (Manual Brake 7, max)
-    # Wire signals: P1-P4 via 648A-D (4-wire binary), B1-B7 via 648E-G (Gray code)
-    # Byte[9] encoding for manual mode not confirmed — need manual PCAP to close GAP-2.
+    0x00: "EB",         # depot resting (legacy single-byte lookup)
+    0x01: "A_P1",  0x02: "A_P2",  0x03: "A_P3",  0x04: "A_P4",
+    0x05: "A_P5",  0x06: "A_P6",  0x07: "A_P7",  0x08: "A_P8",
+    0x09: "A_P9",  0x0A: "A_P10", 0x0B: "A_P11", 0x0C: "A_P12",
+    0x0D: "A_P13", 0x0E: "A_P14", 0x0F: "A_P15", 0x10: "A_P16",
+    0x80: "Neutral",
+    0x81: "A_B1",  0x82: "A_B2",  0x83: "A_B3",  0x84: "A_B4",
+    0x85: "A_B5",  0x86: "A_B6",  0x87: "A_B7",  0x88: "A_B8",
+    0x89: "A_B9",  0x8A: "A_B10", 0x8B: "A_B11", 0x8C: "A_B12",
+    0x8D: "A_B13", 0x8E: "A_B14", 0x8F: "A_B15", 0x90: "A_B16",
 }
 
 
@@ -491,8 +469,49 @@ def get_fault_classification(fault_code: int) -> str:
 
 
 def get_notch_label(notch_byte: int) -> str:
-    """Kembalikan label notch/command dari byte value."""
+    """Single-byte lookup (b9-only). Untuk decoding penuh PTU-compatible pakai decode_notch()."""
     return NOTCH_MAP.get(notch_byte, f"N{notch_byte:02X}")
+
+
+def decode_notch(status_byte: int, notch_step: int, notch_mode: int) -> str:
+    """
+    Decode notch dari 3-byte tuple (byte[8], byte[9], byte[10]) per record TIS.
+
+    Rule (confirmed via TS13 PCAP 200 records vs PTU asli, 19/19 combo match):
+      1. status_byte bit-0 = 1   → "EB" (override; wire 657R Emergency Brake asserted)
+      2. notch_mode = 0x80 atau 0x00 → ATO mode (b9 menentukan step):
+           b9 = 0x00 atau 0x80 → "Neutral"
+           b9 = 0x01..0x10     → "A_P{1..16}"
+           b9 = 0x81..0x90     → "A_B{1..16}"
+      3. notch_mode = 0x40        → Manual Brake (TS13: hanya M_B1 dilihat)
+      4. notch_mode = 0x08        → Manual Power (TS13: hanya M_P1 dilihat)
+      5. fallback: "N{b9:02X}_{b10:02X}"
+    """
+    # Rule 1 — EB asserted via 657R wire
+    if status_byte & 0x01:
+        return "EB"
+
+    # Rule 3/4 — Manual mode (TS13 confirmed: b10=0x40 → M_B, b10=0x08 → M_P)
+    # Step encoding belum penuh dikonfirmasi (hanya step 1 muncul di TS13).
+    # Manual brake/power dari wiring: 648A-D (4-wire bin) / 648E-G (Gray code) → step di b9 lower bits.
+    if notch_mode == 0x40:
+        step = notch_step & 0x0F  # asumsi step di low-nibble; perlu PCAP M_B>1 untuk konfirmasi
+        return f"M_B{step or 1}"
+    if notch_mode == 0x08:
+        step = notch_step & 0x0F
+        return f"M_P{step or 1}"
+
+    # Rule 2 — ATO mode (notch_mode = 0x80 Auto, atau 0x00 saat EB-mode tapi bit-0 b8 belum aktif)
+    if notch_step == 0x00 or notch_step == 0x80:
+        # 0x00 + b10=0x00 secara teknis "EB-mode tapi 657R belum asserted" — di TS13 tidak pernah muncul
+        # (b8 bit-0 selalu set saat kombinasi ini). Kalau muncul, label "Neutral" konsisten dengan b10=0x80.
+        return "Neutral"
+    if 0x01 <= notch_step <= 0x10:
+        return f"A_P{notch_step}"
+    if 0x81 <= notch_step <= 0x90:
+        return f"A_B{notch_step & 0x0F}"
+
+    return f"N{notch_step:02X}_{notch_mode:02X}"
 
 
 def get_car_number(car_id_byte: int) -> int:

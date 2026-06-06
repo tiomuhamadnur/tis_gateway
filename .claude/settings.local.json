@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(python -m pytest tests/test_parser.py -q 2>&1)",
+      "PowerShell(python tools\\\\replay_session_dedup.py)",
+      "PowerShell(python -m pytest tests/ -q 2>&1)"
+    ]
+  }
+}
