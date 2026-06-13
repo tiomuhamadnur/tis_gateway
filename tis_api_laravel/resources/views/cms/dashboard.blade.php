@@ -1,4 +1,4 @@
-<div class="flex h-full w-full flex-1 flex-col gap-4 rounded-xl p-4">
+<div class="flex h-full w-full flex-1 flex-col gap-4 rounded-xl p-0.5 sm:p-4">
     <div class="flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-bold tracking-tight">Dashboard</h1>
@@ -158,13 +158,36 @@
     const _initEquip = @json($chartEquipData);
     const _initCar   = @json($chartCarData);
 
+    function chartColors() {
+        const isDark = document.documentElement.classList.contains('dark');
+        return {
+            text: isDark ? '#d4d4d4' : '#374151',
+            muted: isDark ? '#a3a3a3' : '#737373',
+            grid: isDark ? '#404040' : '#e5e5e5',
+        };
+    }
+
     function renderCharts(data) {
         if (typeof Highcharts === 'undefined') return;
+
+        const c = chartColors();
 
         // Set Highcharts options
         Highcharts.setOptions({
             credits: { enabled: false },
-            accessibility: { enabled: false }
+            accessibility: { enabled: false },
+            chart: { style: { color: c.text } },
+            xAxis: {
+                labels: { style: { color: c.text } },
+                lineColor: c.grid,
+                tickColor: c.grid,
+                gridLineColor: c.grid,
+            },
+            yAxis: {
+                labels: { style: { color: c.text } },
+                title: { style: { color: c.muted } },
+                gridLineColor: c.grid,
+            },
         });
 
         // Set license for development
@@ -183,6 +206,10 @@
             }
         });
 
+        function labelStyle() {
+            return { fontSize: '11px', fontWeight: '600', textOutline: 'none', color: c.text };
+        }
+
         window._tisCharts.rake = Highcharts.chart('rake-chart', {
             chart: { type: 'column', backgroundColor: 'transparent' },
             title: { text: null },
@@ -197,11 +224,7 @@
                     dataLabels: {
                         enabled: true,
                         format: '{y}',
-                        style: {
-                            fontSize: '11px',
-                            fontWeight: '600',
-                            textOutline: 'none'
-                        }
+                        style: labelStyle(),
                     },
                     point: {
                         events: {
@@ -226,11 +249,7 @@
                     dataLabels: {
                         enabled: true,
                         format: '<b>{point.name}</b>: {point.y} ({point.percentage:.1f}%)',
-                        style: {
-                            fontSize: '11px',
-                            fontWeight: '600',
-                            textOutline: 'none'
-                        }
+                        style: labelStyle(),
                     },
                     point: {
                         events: {
@@ -257,11 +276,7 @@
                     dataLabels: {
                         enabled: true,
                         format: '{y}',
-                        style: {
-                            fontSize: '11px',
-                            fontWeight: '600',
-                            textOutline: 'none'
-                        }
+                        style: labelStyle(),
                     },
                     point: {
                         events: {
@@ -289,11 +304,7 @@
                     dataLabels: {
                         enabled: true,
                         format: '{y}',
-                        style: {
-                            fontSize: '11px',
-                            fontWeight: '600',
-                            textOutline: 'none'
-                        }
+                        style: labelStyle(),
                     },
                     point: {
                         events: {

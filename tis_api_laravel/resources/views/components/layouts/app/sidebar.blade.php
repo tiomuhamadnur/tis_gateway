@@ -20,7 +20,7 @@
             </a>
 
             <flux:navlist variant="outline">
-                <flux:navlist.group heading="Menu Utama" class="grid">
+                <flux:navlist.group heading="Main Menu" class="grid">
                     <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
                         Dashboard
                     </flux:navlist.item>
@@ -36,7 +36,7 @@
                 </flux:navlist.group>
 
                 @can('manage users')
-                <flux:navlist.group heading="Administrasi" class="grid">
+                <flux:navlist.group heading="Administration" class="grid">
                     <flux:navlist.item icon="users" :href="route('users.index')" :current="request()->routeIs('users.*')" wire:navigate>
                         User Management
                     </flux:navlist.item>
@@ -164,8 +164,7 @@
 
         {{ $slot }}
 
-        {{-- Highcharts & Flatpickr loaded before Alpine so they're always available --}}
-        <script src="https://code.highcharts.com/highcharts.js"></script>
+        {{-- Flatpickr loaded separately (not in Vite bundle) --}}
         <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
         @fluxScripts
         @stack('scripts')

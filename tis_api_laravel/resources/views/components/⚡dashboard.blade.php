@@ -118,7 +118,6 @@ new class extends Component
 </div>
 
 @push('scripts')
-<script src="https://code.highcharts.com/highcharts.js"></script>
 <script>
 document.addEventListener('livewire:loaded', () => {
     // Rake Chart
