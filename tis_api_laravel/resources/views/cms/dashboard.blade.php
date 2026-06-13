@@ -1,4 +1,4 @@
-<div class="flex h-full w-full flex-1 flex-col gap-4 rounded-xl p-1.5 sm:p-4">
+<div class="flex h-full w-full flex-1 flex-col gap-4 rounded-xl p-3 sm:p-4">
     <div class="flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-bold tracking-tight">Dashboard</h1>
