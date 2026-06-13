@@ -10,9 +10,9 @@ use Illuminate\Support\Str;
 class FailureRecordSeeder extends Seeder
 {
     /**
-     * Seed contoh failure sessions & records untuk development/demo.
+     * Seed example failure sessions & records for development/demo.
      *
-     * Data menggunakan equipment code dan fault code aktual dari
+     * Data uses actual equipment codes and fault codes from
      * TIS Maintenance Manual Sumitomo (Chapter 16, SRR-RST-GEN-0104-16D).
      */
     public function run(): void

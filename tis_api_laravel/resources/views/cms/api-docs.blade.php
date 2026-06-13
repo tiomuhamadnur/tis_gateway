@@ -40,7 +40,7 @@
                             name: 'Failures',
                             item: [
                                 {
-                                    name: 'POST /failures — Kirim batch failure records',
+                                    name: 'POST /failures — Send batch failure records',
                                     request: {
                                         method: 'POST',
                                         header: [
@@ -115,7 +115,7 @@
                             name: 'Analytics',
                             item: [
                                 {
-                                    name: 'GET /dashboard — Statistik keseluruhan',
+                                    name: 'GET /dashboard — Overall statistics',
                                     request: {
                                         method: 'GET',
                                         header: [{ key: 'Authorization', value: 'Bearer {{api_key}}' }, { key: 'Accept', value: 'application/json' }],
@@ -123,7 +123,7 @@
                                     }
                                 },
                                 {
-                                    name: 'GET /analytics/trend — Tren failure per periode',
+                                    name: 'GET /analytics/trend — Failure trend per period',
                                     request: {
                                         method: 'GET',
                                         header: [{ key: 'Authorization', value: 'Bearer {{api_key}}' }, { key: 'Accept', value: 'application/json' }],
@@ -135,7 +135,7 @@
                                     }
                                 },
                                 {
-                                    name: 'GET /analytics/pareto — Analisis Pareto',
+                                    name: 'GET /analytics/pareto — Pareto Analysis',
                                     request: {
                                         method: 'GET',
                                         header: [{ key: 'Authorization', value: 'Bearer {{api_key}}' }, { key: 'Accept', value: 'application/json' }],
@@ -247,7 +247,7 @@
         {{-- Auth banner --}}
         <div class="flex items-center gap-3 rounded-lg border border-zinc-700 bg-zinc-800/50 px-4 py-3 mb-6">
             <svg class="w-4 h-4 text-yellow-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m0 0v2m0-2h2m-2 0H10m9-7V8a7 7 0 10-14 0v2a2 2 0 00-2 2v5a2 2 0 002 2h14a2 2 0 002-2v-5a2 2 0 00-2-2z"/></svg>
-            <p class="text-xs text-zinc-300">Semua endpoint wajib menyertakan header <code class="bg-zinc-700 px-1 rounded">Authorization: Bearer {TIS_API_KEY}</code></p>
+            <p class="text-xs text-zinc-300">All endpoints must include the <code class="bg-zinc-700 px-1 rounded">Authorization: Bearer {TIS_API_KEY}</code> header</p>
         </div>
 
         {{-- ═══ POST /failures ═══ --}}
@@ -255,7 +255,7 @@
             <div class="flex items-center gap-3 px-5 py-3 border-b border-zinc-700/60">
                 <span class="method-badge method-post">POST</span>
                 <code class="text-sm font-mono text-zinc-100 font-semibold">/api/v1/failures</code>
-                <span class="ml-auto text-xs text-zinc-500">Kirim batch failure records dari TIS</span>
+                <span class="ml-auto text-xs text-zinc-500">Send batch failure records from TIS</span>
             </div>
             <div class="grid lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-zinc-700/60">
                 {{-- Left: params --}}
@@ -264,14 +264,14 @@
                         <p class="text-[10px] font-semibold uppercase tracking-widest text-zinc-500 mb-2">Request Body (JSON)</p>
                         <div class="space-y-2">
                             @php $fields = [
-                                ['rake_id','string','required','Identitas rake / trainset'],
-                                ['records','array','required','Array objek failure'],
-                                ['records[].timestamp','datetime','required','ISO 8601, mis. 2025-05-08T09:30:00Z'],
-                                ['records[].equipment_name','string','required','Nama komponen'],
-                                ['records[].fault_name','string','required','Kode fault'],
+                                ['rake_id','string','required','Train / trainset identifier'],
+                                ['records','array','required','Array of failure objects'],
+                                ['records[].timestamp','datetime','required','ISO 8601, e.g. 2025-05-08T09:30:00Z'],
+                                ['records[].equipment_name','string','required','Component name'],
+                                ['records[].fault_name','string','required','Fault code'],
                                 ['records[].classification','string','required','heavy | medium | light'],
-                                ['records[].description','string','optional','Keterangan tambahan'],
-                                ['records[].additional_data','any','optional','Data bebas (object/string/dll)'],
+                                ['records[].description','string','optional','Additional notes'],
+                                ['records[].additional_data','any','optional','Free-form data (object/string/etc)'],
                             ]; @endphp
                             @foreach($fields as [$name, $type, $req, $desc])
                             <div class="flex items-start gap-3 text-xs">
@@ -337,8 +337,8 @@
                     <p class="text-[10px] font-semibold uppercase tracking-widest text-zinc-500 mb-2">Query Parameters</p>
                     @php $params = [
                         ['rake_id','string','optional','Filter berdasarkan rake'],
-                        ['from','date','optional','Tanggal awal YYYY-MM-DD (bersama to)'],
-                        ['to','date','optional','Tanggal akhir YYYY-MM-DD (bersama from)'],
+                        ['from','date','optional','Start date YYYY-MM-DD (with to)'],
+                        ['to','date','optional','End date YYYY-MM-DD (with from)'],
                         ['per_page','integer','optional','Jumlah per halaman, default 15'],
                         ['page','integer','optional','Nomor halaman, default 1'],
                     ]; @endphp
@@ -398,10 +398,10 @@
                         <code class="shrink-0 font-mono text-green-300">sessionId</code>
                         <span class="text-zinc-500 shrink-0">UUID</span>
                         <span class="param-required shrink-0">REQ</span>
-                        <span class="text-zinc-400">UUID session yang dikembalikan dari POST /failures</span>
+                        <span class="text-zinc-400">UUID session returned from POST /failures</span>
                     </div>
                     <div class="rounded-lg border border-red-900/40 bg-red-900/10 px-3 py-2 text-xs text-red-300 mt-3">
-                        Returns <strong>404</strong> jika sessionId tidak ditemukan.
+                        Returns <strong>404</strong> if sessionId is not found.
                     </div>
                 </div>
                 <div class="p-5 space-y-3">
@@ -448,7 +448,7 @@
                 <div class="p-5 space-y-3">
                     <div class="flex items-center gap-2 rounded-md bg-amber-900/20 border border-amber-800/40 px-3 py-2 text-xs text-amber-300 mb-3">
                         <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z"/></svg>
-                        Gunakan <strong>multipart/form-data</strong>, bukan JSON.
+                        Use <strong>multipart/form-data</strong>, not JSON.
                     </div>
                     <p class="text-[10px] font-semibold uppercase tracking-widest text-zinc-500 mb-2">Form Fields</p>
                     <div class="space-y-2">
@@ -498,7 +498,7 @@
             <div class="flex items-center gap-3 px-5 py-3 border-b border-zinc-700/60">
                 <span class="method-badge method-get">GET</span>
                 <code class="text-sm font-mono text-zinc-100 font-semibold">/api/v1/dashboard</code>
-                <span class="ml-auto text-xs text-zinc-500">Ringkasan statistik — tidak ada parameter</span>
+                <span class="ml-auto text-xs text-zinc-500">Summary statistics — no parameters</span>
             </div>
             <div class="p-5">
                 <div class="code-wrap rounded-lg overflow-hidden border border-zinc-700/40">
@@ -539,14 +539,14 @@
             <div class="flex items-center gap-3 px-5 py-3 border-b border-zinc-700/60">
                 <span class="method-badge method-get">GET</span>
                 <code class="text-sm font-mono text-zinc-100 font-semibold">/api/v1/analytics/trend</code>
-                <span class="ml-auto text-xs text-zinc-500">Tren jumlah failure per periode</span>
+                <span class="ml-auto text-xs text-zinc-500">Number of failures trend per period</span>
             </div>
             <div class="grid lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-zinc-700/60">
                 <div class="p-5 space-y-2">
                     <p class="text-[10px] font-semibold uppercase tracking-widest text-zinc-500 mb-2">Query Parameters</p>
                     @php $p = [
-                        ['from','date','required','Tanggal awal YYYY-MM-DD'],
-                        ['to','date','required','Tanggal akhir YYYY-MM-DD'],
+                        ['from','date','required','Start date YYYY-MM-DD'],
+                        ['to','date','required','End date YYYY-MM-DD'],
                         ['group_by','string','optional','day (default) | week | month'],
                         ['rake_id','string','optional','Filter untuk rake tertentu'],
                     ]; @endphp
@@ -588,8 +588,8 @@
                 <div class="p-5 space-y-2">
                     <p class="text-[10px] font-semibold uppercase tracking-widest text-zinc-500 mb-2">Query Parameters <span class="normal-case font-normal text-zinc-600">(semua opsional)</span></p>
                     @php $p = [
-                        ['start_date','date','Tanggal awal filter (bersama end_date)'],
-                        ['end_date','date','Tanggal akhir filter (bersama start_date)'],
+                        ['start_date','date','Start date filter (with end_date)'],
+                        ['end_date','date','End date filter (with start_date)'],
                         ['start_time','time','Filter jam mulai HH:MM:SS (bersama end_time)'],
                         ['end_time','time','Filter jam selesai HH:MM:SS (bersama start_time)'],
                         ['failure_type','string','Filter berdasarkan equipment_name'],
@@ -625,7 +625,7 @@
             <div class="flex items-center gap-3 px-5 py-3 border-b border-zinc-700/60">
                 <span class="method-badge method-get">GET</span>
                 <code class="text-sm font-mono text-zinc-100 font-semibold">/api/v1/health</code>
-                <span class="ml-auto text-xs text-zinc-500">Health check — tidak ada parameter</span>
+                <span class="ml-auto text-xs text-zinc-500">Health check — no parameters</span>
             </div>
             <div class="p-5">
                 <div class="code-wrap rounded-lg overflow-hidden border border-zinc-700/40 max-w-xs">
@@ -648,10 +648,10 @@
             </div>
             <div class="p-5 grid grid-cols-2 lg:grid-cols-4 gap-3">
                 @php $errors = [
-                    ['401','Unauthorized','API key salah atau kosong','text-yellow-400'],
-                    ['404','Not Found','Resource tidak ada di database','text-orange-400'],
-                    ['422','Unprocessable','Validasi field gagal','text-red-400'],
-                    ['500','Server Error','Cek storage/logs/laravel.log','text-red-500'],
+                    ['401','Unauthorized','Invalid or missing API key','text-yellow-400'],
+                    ['404','Not Found','Resource not found in database','text-orange-400'],
+                    ['422','Unprocessable','Field validation failed','text-red-400'],
+                    ['500','Server Error','Check storage/logs/laravel.log','text-red-500'],
                 ]; @endphp
                 @foreach($errors as [$code, $label, $desc, $color])
                 <div class="rounded-lg bg-zinc-900/60 border border-zinc-700/40 p-3 space-y-1">

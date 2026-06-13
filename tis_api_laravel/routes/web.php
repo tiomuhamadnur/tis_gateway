@@ -30,6 +30,16 @@ Route::middleware(['auth'])->group(function () {
     Route::get('failures/export/excel', [App\Http\Controllers\ExportController::class, 'exportExcel'])->name('failures.export.excel');
     Route::get('failures/export/pdf', [App\Http\Controllers\ExportController::class, 'exportPdf'])->name('failures.export.pdf');
 
+    Route::view('session-downloads', 'session-downloads')
+        ->name('sessions.download.index')
+        ->middleware('can:view failures');
+    Route::get('session-downloads/{sessionId}/csv', [App\Http\Controllers\SessionDownloadController::class, 'downloadCsv'])
+        ->name('sessions.download.csv')
+        ->middleware('can:view failures');
+    Route::get('session-downloads/{sessionId}/pdf', [App\Http\Controllers\SessionDownloadController::class, 'downloadPdf'])
+        ->name('sessions.download.pdf')
+        ->middleware('can:view failures');
+
     Route::get('api-docs', function () {
         return view('api-docs');
     })->name('api.docs')->middleware('role:superadmin');

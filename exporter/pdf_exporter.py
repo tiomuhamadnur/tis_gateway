@@ -178,4 +178,5 @@ class PDFExporter:
     def _generate_filename(self, dt: datetime, rake_id: int) -> str:
         prefix = config.output.filename_prefix
         date   = dt.strftime("%y%m%d")
-        return f"{prefix}{date}_{rake_id:03d}.pdf"
+        time   = dt.strftime("%H%M%S")
+        return f"{prefix}{date}_TS{rake_id:02d}_{time}.pdf"

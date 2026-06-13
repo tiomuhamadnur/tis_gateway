@@ -23,7 +23,7 @@ class DashboardController extends Controller
             ->groupBy('rake_id')
             ->get();
 
-        // Agregasi per equipment (gunakan equipment_code + name)
+        // Aggregation per equipment (use equipment_code + name)
         $perEquipment = FailureRecord::select(
                 'equipment_code',
                 'equipment_name',
@@ -75,7 +75,7 @@ class DashboardController extends Controller
 
         $groupBy = $request->input('group_by', 'day');
 
-        // SQLite & MySQL masing-masing punya format fungsi tanggal berbeda
+        // SQLite & MySQL have different date function formats
         $isSqlite = config('database.default') === 'sqlite';
         $dateExpr = $isSqlite
             ? match ($groupBy) {

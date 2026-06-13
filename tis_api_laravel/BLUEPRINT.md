@@ -1,14 +1,14 @@
 # API Blueprint - TIS Gateway Backend
 
-Dokumen ini menjelaskan cetak biru (blueprint) untuk pengembangan backend API **tis_gateway**, yang akan berfungsi sebagai *consumer* data dari TIS Gateway (Python). Implementasi ini akan menggunakan framework Laravel 12, dilengkapi dengan Yajra DataTable untuk tampilan data, Livewire untuk UI interaktif, Highchart untuk visualisasi data, dan fitur export ke Excel serta PDF.
+This document outlines the blueprint for backend API development of **tis_gateway**, which will serve as a data consumer for TIS Gateway (Python). This implementation will use Laravel 12 framework, equipped with Yajra DataTable for data presentation, Livewire for interactive UI, Highchart for data visualization, and export features for Excel and PDF.
 
-**Update Terbaru:** Aplikasi dibangun sebagai monolith dengan FE dan BE dalam satu aplikasi Laravel. Ada mode development dan production. Referensi FE: https://tweakcn.com/themes/cmluqysmw000204ji34jja0ul (tema shadcn/ui untuk UI components modern).
+**Latest Update:** The application is built as a monolith with FE and BE in a single Laravel application. There are development and production modes. FE Reference: https://tweakcn.com/themes/cmluqysmw000204ji34jja0ul (shadcn/ui theme for modern UI components).
 
-## 1. Arsitektur Umum
+## 1. General Architecture
 
-Backend API akan menerima data failure dan file report dari TIS Gateway melalui HTTP POST requests. Data akan disimpan dalam database MySQL, dan file akan disimpan di sistem penyimpanan server. Frontend akan dibangun menggunakan Livewire untuk dashboard, tampilan data, dan CMS.
+The backend API will receive failure data and report files from TIS Gateway via HTTP POST requests. Data will be stored in a MySQL database, and files will be stored in the server storage system. The frontend will be built using Livewire for dashboard, data presentation, and CMS.
 
-**Monolith Architecture:** FE dan BE terintegrasi dalam satu aplikasi Laravel. Frontend menggunakan Blade templates dengan Livewire untuk interaktivitas, tanpa API terpisah untuk FE.
+**Monolith Architecture:** FE and BE are integrated in a single Laravel application. Frontend uses Blade templates with Livewire for interactivity, without a separate API for FE.
 
 ```
 TIS Gateway (Python)
@@ -24,160 +24,160 @@ Monolith App (Laravel 12)
         └── UI / Dashboard + CMS (Livewire, Yajra Datatables, Highcharts, shadcn/ui inspired)
 ```
 
-### 1.1. Mode Development & Production
+### 1.1. Development & Production Mode
 
-- **Development Mode:** Menggunakan local environment, dengan debugging enabled, hot reload untuk assets, dan database lokal.
-- **Production Mode:** Optimized untuk performance, dengan caching, minified assets, dan konfigurasi production database.
+- **Development Mode:** Uses local environment, with debugging enabled, hot reload for assets, and local database.
+- **Production Mode:** Optimized for performance, with caching, minified assets, and production database configuration.
 
-Konfigurasi mode melalui `.env` file (`APP_ENV=local` untuk dev, `APP_ENV=production` untuk prod).
+Mode configuration through `.env` file (`APP_ENV=local` for dev, `APP_ENV=production` for prod).
 
-## 2. Teknologi yang Digunakan
+## 2. Technologies Used
 
-*   **Nama Aplikasi:** tis_gateway
+*   **Application Name:** tis_gateway
 *   **Framework:** Laravel 12 (PHP)
 *   **Database:** MySQL
-*   **Frontend Interaktif:** Livewire + Alpine.js
+*   **Interactive Frontend:** Livewire + Alpine.js
 *   **UI Components:** shadcn/ui inspired (Tailwind CSS based, modern design)
-*   **Manajemen User & Role:** Spatie Laravel Permission
-*   **Tabel Data:** Yajra Datatables (terintegrasi dengan Livewire)
-*   **Chart/Grafik:** Highcharts
-*   **Export Data:** Laravel Excel (untuk Excel) dan DomPDF / Laravel PDF (untuk PDF)
-*   **Asset Management:** Vite untuk bundling dan hot reload
-*   **Styling:** Tailwind CSS dengan custom components dari referensi tema
+*   **User & Role Management:** Spatie Laravel Permission
+*   **Data Table:** Yajra Datatables (integrated with Livewire)
+*   **Chart/Graphics:** Highcharts
+*   **Data Export:** Laravel Excel (for Excel) and DomPDF / Laravel PDF (for PDF)
+*   **Asset Management:** Vite for bundling and hot reload
+*   **Styling:** Tailwind CSS with custom components from theme reference
 
-## 3. Autentikasi
+## 3. Authentication
 
-Semua request dari TIS Gateway akan diautentikasi menggunakan **Bearer Token** di header `Authorization`. Token ini akan divalidasi oleh Laravel Middleware.
+All requests from TIS Gateway will be authenticated using **Bearer Token** in the `Authorization` header. This token will be validated by Laravel Middleware.
 
 ```
 Authorization: Bearer {TIS_API_KEY}
 ```
 
-Implementasi:
-*   Laravel Middleware untuk otentikasi API key.
-*   API Key akan disimpan di `.env` file server backend.
+Implementation:
+*   Laravel Middleware for API key authentication.
+*   API Key will be stored in the server backend `.env` file.
 
 ## 4. CMS (Content Management System) & User Management
 
-Aplikasi `tis_gateway` akan dilengkapi dengan CMS sederhana untuk manajemen pengguna dan role.
+The **tis_gateway** application will be equipped with a simple CMS for user and role management.
 
 ### 4.1. Role-Based Access Control (RBAC)
 
-*   Menggunakan paket **Spatie Laravel Permission** untuk mengelola role dan permission pengguna.
-*   Admin dapat membuat, mengedit, dan menghapus role serta permission.
-*   Setiap user akan memiliki role (misalnya: Admin, Operator, Viewer) yang menentukan akses ke fitur-fitur aplikasi.
+*   Uses the **Spatie Laravel Permission** package to manage user roles and permissions.
+*   Admins can create, edit, and delete roles and permissions.
+*   Each user will have a role (e.g., Admin, Operator, Viewer) that determines access to application features.
 
-### 4.2. Manajemen Pengguna (CRUD)
+### 4.2. User Management (CRUD)
 
-*   User dengan role yang memiliki permission yang sesuai dapat mengelola daftar pengguna (CRUD).
-*   Form pendaftaran/pengeditan pengguna akan mencakup nama, email, password, dan penentuan role.
+*   Users with roles that have appropriate permissions can manage the user list (CRUD).
+*   User registration/editing form will include name, email, password, and role assignment.
 
-## 5. Endpoints API
+## 5. API Endpoints
 
-API akan mengimplementasikan endpoints yang telah didefinisikan dalam `README.md` bagian "Backend API Specification", serta endpoints untuk CRUD data internal.
+The API will implement endpoints as defined in the `README.md` "Backend API Specification" section, as well as endpoints for internal CRUD operations.
 
-### 5.1. `POST /v1/failures` — Terima Failure Records
+### 5.1. `POST /v1/failures` — Receive Failure Records
 
-*   **Deskripsi:** Menerima data failure records dalam format JSON.
-*   **Otentikasi:** Bearer Token.
-*   **Request Body:** Sesuai `README.md`.
-*   **Response:** `201 Created` dengan `session_id`, `received`, `status`.
+*   **Description:** Receives failure records data in JSON format.
+*   **Authentication:** Bearer Token.
+*   **Request Body:** As per `README.md`.
+*   **Response:** `201 Created` with `session_id`, `received`, `status`.
 
-### 5.2. `POST /v1/files` — Terima Upload File (CSV / PDF)
+### 5.2. `POST /v1/files` — Receive File Upload (CSV / PDF)
 
-*   **Deskripsi:** Menerima upload file CSV atau PDF.
-*   **Otentikasi:** Bearer Token.
+*   **Description:** Receives CSV or PDF file uploads.
+*   **Authentication:** Bearer Token.
 *   **Request Fields:** `rake_id`, `file` (multipart/form-data).
-*   **Response:** `201 Created` dengan `file_id`, `filename`, `status`.
+*   **Response:** `201 Created` with `file_id`, `filename`, `status`.
 
-### 5.3. `GET /v1/failures` — List Sesi Download & CRUD
+### 5.3. `GET /v1/failures` — List Download Sessions & CRUD
 
-*   **Deskripsi:** Menampilkan daftar sesi download dengan filter dan pagination. Tersedia fungsi CRUD untuk data ini melalui antarmuka web.
+*   **Description:** Displays list of download sessions with filtering and pagination. CRUD functions for this data available via web interface.
 *   **Query Parameters:** `rake_id`, `from`, `to`, `page`, `per_page`.
-*   **Response:** `200 OK` dengan data sesi dan metadata pagination.
-*   **Implementasi Frontend:** Akan menggunakan Livewire dan Yajra Datatables untuk penyajian tabel data yang efisien dan interaktif. Setiap baris data di tabel akan memiliki opsi untuk "View Detail", "Edit", dan "Delete" (sesuai permission role).
+*   **Response:** `200 OK` with session data and pagination metadata.
+*   **Frontend Implementation:** Will use Livewire and Yajra Datatables for efficient and interactive data table presentation. Each data row in the table will have options for "View Detail", "Edit", and "Delete" (according to role permissions).
 
-### 5.4. `GET /v1/failures/{session_id}` — Detail Sesi + Records
+### 5.4. `GET /v1/failures/{session_id}` — Session Detail + Records
 
-*   **Deskripsi:** Menampilkan detail satu sesi download beserta failure records yang terkait.
-*   **Response:** `200 OK` dengan detail sesi dan array records.
-*   **Implementasi Frontend:** Livewire component untuk menampilkan detail, dengan kemampuan untuk mengedit atau menghapus record individual (jika diizinkan oleh permission).
+*   **Description:** Displays detail of one download session along with related failure records.
+*   **Response:** `200 OK` with session detail and records array.
+*   **Frontend Implementation:** Livewire component to display detail, with ability to edit or delete individual records (if allowed by permissions).
 
-### 5.5. `GET /v1/dashboard` — Ringkasan Statistik
+### 5.5. `GET /v1/dashboard` — Statistics Summary
 
-*   **Deskripsi:** Menyediakan data agregat untuk dashboard.
-*   **Response:** `200 OK` dengan total sesi, total records, data per kereta, per equipment, per klasifikasi, dan recent heavy faults.
-*   **Implementasi Frontend:** Livewire component yang mengintegrasikan Highcharts untuk visualisasi data.
+*   **Description:** Provides aggregate data for dashboard.
+*   **Response:** `200 OK` with total sessions, total records, data per train, per equipment, per classification, and recent heavy faults.
+*   **Frontend Implementation:** Livewire component that integrates Highcharts for data visualization.
 
-### 5.6. `GET /v1/analytics/trend` — Tren Fault per Periode
+### 5.6. `GET /v1/analytics/trend` — Fault Trend per Period
 
-*   **Deskripsi:** Menyediakan data tren fault berdasarkan periode.
+*   **Description:** Provides fault trend data based on period.
 *   **Query Parameters:** `rake_id`, `from`, `to`, `group_by` (day / week / month).
-*   **Response:** `200 OK` dengan data tren.
-*   **Implementasi Frontend:** Highcharts untuk menampilkan grafik tren.
+*   **Response:** `200 OK` with trend data.
+*   **Frontend Implementation:** Highcharts for displaying trend graph.
 
 ### 5.7. `GET /v1/analytics/pareto` — Pareto Chart Faults
 
-*   **Deskripsi:** Endpoint untuk mendapatkan data yang digunakan untuk membangun Pareto Chart.
+*   **Description:** Endpoint to get data for building Pareto Chart.
 *   **Query Parameters:**
-    *   `start_date`, `end_date`: Filter berdasarkan rentang tanggal.
-    *   `start_time`, `end_time`: Filter berdasarkan rentang waktu dalam sehari.
-    *   `failure_type`: Filter berdasarkan jenis failure (misalnya `equipment_name` atau `fault_name`).
-    *   `rake_id`: Filter berdasarkan ID kereta.
-*   **Response:** `200 OK` dengan data frekuensi fault dan persentase kumulatif yang diperlukan untuk Highcharts Pareto.
-*   **Implementasi Frontend:** Livewire component yang mengintegrasikan Highcharts untuk menampilkan Pareto Chart interaktif dengan filter dinamis.
+    *   `start_date`, `end_date`: Filter by date range.
+    *   `start_time`, `end_time`: Filter by time range within a day.
+    *   `failure_type`: Filter by failure type (e.g. `equipment_name` or `fault_name`).
+    *   `rake_id`: Filter by train ID.
+*   **Response:** `200 OK` with fault frequency data and cumulative percentage needed for Highcharts Pareto.
+*   **Frontend Implementation:** Livewire component that integrates Highcharts to display interactive Pareto Chart with dynamic filtering.
 
 ### 5.8. `GET /v1/health` — Health Check
 
-*   **Deskripsi:** Endpoint sederhana untuk memeriksa status API.
-*   **Response:** `200 OK` dengan `status: "ok"` dan `version`.
+*   **Description:** Simple endpoint to check API status.
+*   **Response:** `200 OK` with `status: "ok"` and `version`.
 
-## 6. Struktur Database (MySQL)
+## 6. Database Structure (MySQL)
 
-Struktur tabel akan mengikuti spesifikasi di `README.md`, dengan penyesuaian untuk Laravel Eloquent ORM.
-Tambahan tabel untuk user management dan role/permission dari Spatie.
+The table structure will follow the specification in `README.md`, with adjustments for Laravel Eloquent ORM.
+Additional tables for user management and roles/permissions from Spatie.
 
-*   **`users` Table:** Untuk menyimpan informasi pengguna (nama, email, password, dll).
-*   **`roles` Table:** Dari Spatie, untuk mendefinisikan role.
-*   **`permissions` Table:** Dari Spatie, untuk mendefinisikan permission.
-*   **`model_has_roles`, `role_has_permissions` Table:** Tabel pivot dari Spatie.
-*   **`sessions` Table:** Akan digunakan untuk menyimpan informasi sesi.
-*   **`failure_records` Table:** Akan menyimpan setiap record failure.
-*   **`uploaded_files` Table:** Akan menyimpan metadata file CSV/PDF yang diupload.
-*   **`rakes` Table:** Tabel master data untuk kereta.
+*   **`users` Table:** To store user information (name, email, password, etc).
+*   **`roles` Table:** From Spatie, to define roles.
+*   **`permissions` Table:** From Spatie, to define permissions.
+*   **`model_has_roles`, `role_has_permissions` Table:** Pivot tables from Spatie.
+*   **`sessions` Table:** Will be used to store session information.
+*   **`failure_records` Table:** Will store each failure record.
+*   **`uploaded_files` Table:** Will store metadata of uploaded CSV/PDF files.
+*   **`rakes` Table:** Master data table for trains.
 
-Relasi antar tabel akan dikelola menggunakan Eloquent Relationships.
+Relationships between tables will be managed using Eloquent Relationships.
 
-## 7. Validasi
+## 7. Validation
 
-Semua input yang diterima oleh API dan form CMS akan divalidasi secara ketat menggunakan Laravel Validation rules, sesuai dengan spesifikasi di `README.md` dan kebutuhan CMS.
+All inputs received by the API and CMS forms will be strictly validated using Laravel Validation rules, according to the specification in `README.md` and CMS requirements.
 
-## 8. Export Data (Frontend/Reporting)
+## 8. Data Export (Frontend/Reporting)
 
-Untuk fitur export dari tampilan dashboard/report:
+For export features from dashboard/report views:
 
-*   **Export Excel:** Akan diimplementasikan menggunakan paket Laravel Excel. Pengguna dapat memilih data yang ingin diekspor dari tampilan tabel atau laporan.
-*   **Export PDF:** Akan diimplementasikan menggunakan DomPDF atau paket Laravel PDF lainnya. Ini akan digunakan untuk menghasilkan laporan PDF yang mirip dengan output dari TIS Gateway Python.
+*   **Export Excel:** Will be implemented using Laravel Excel package. Users can select data to export from table or report views.
+*   **Export PDF:** Will be implemented using DomPDF or other Laravel PDF package. This will be used to generate PDF reports similar to TIS Gateway Python output.
 
 ## 9. Development Workflow
 
-*   **Migrations:** Laravel Migrations untuk pengelolaan skema database (termasuk tabel Spatie).
-*   **Seeder:** Laravel Seeders untuk data master seperti `rakes`, `equipment_map`, dan data default user/role/permission.
-*   **Tests:** Unit dan Feature tests menggunakan PHPUnit.
-*   **Code Quality:** Penggunaan tool seperti `PHP_CodeSniffer` atau `Laravel Pint` untuk menjaga kualitas kode dan konsistensi styling.
-*   **Deployment:** Docker atau Nginx/Apache + PHP-FPM.
+*   **Migrations:** Laravel Migrations for database schema management (including Spatie tables).
+*   **Seeder:** Laravel Seeders for master data such as `rakes`, `equipment_map`, and default user/role/permission data.
+*   **Tests:** Unit and Feature tests using PHPUnit.
+*   **Code Quality:** Use tools like `PHP_CodeSniffer` or `Laravel Pint` to maintain code quality and styling consistency.
+*   **Deployment:** Docker or Nginx/Apache + PHP-FPM.
 
-### 9.1. Deployment dengan Docker Container
+### 9.1. Deployment with Docker Container
 
-Aplikasi akan didistribusikan menggunakan Docker Container untuk kemudahan deployment dan konsistensi lingkungan.
+The application will be distributed using Docker Container for ease of deployment and environment consistency.
 
-*   **Dockerfile:** Akan dibuat `Dockerfile` untuk membangun image aplikasi Laravel. Ini akan mencakup instalasi PHP, Nginx (atau Apache), Composer dependencies, dan konfigurasi yang diperlukan.
-*   **Docker Compose:** File `docker-compose.yml` akan digunakan untuk mendefinisikan dan menjalankan multi-container Docker application, termasuk:
-    *   **`app` service:** Untuk aplikasi Laravel (berdasarkan `Dockerfile`).
-    *   **`nginx` service:** Sebagai web server (jika tidak digabungkan dengan PHP-FPM di container `app`).
-    *   **`db` service:** Untuk database MySQL.
-    *   **`redis` service:** (Opsional) Untuk caching atau queue.
-*   **Manajemen Konfigurasi (.env):** Semua konfigurasi sensitif dan lingkungan (seperti database credentials, API keys, mail settings, dll.) akan disimpan dalam file `.env`. Saat deployment dengan Docker, variabel-variabel ini akan disuntikkan ke dalam container melalui environment variables, memastikan aplikasi dapat dikonfigurasi tanpa harus membangun ulang image. Contoh variabel `.env` yang penting:
+*   **Dockerfile:** A `Dockerfile` will be created to build the Laravel application image. This will include PHP, Nginx (or Apache), Composer dependencies, and required configuration installation.
+*   **Docker Compose:** A `docker-compose.yml` file will be used to define and run multi-container Docker application, including:
+    *   **`app` service:** For Laravel application (based on `Dockerfile`).
+    *   **`nginx` service:** As web server (if not combined with PHP-FPM in `app` container).
+    *   **`db` service:** For MySQL database.
+    *   **`redis` service:** (Optional) For caching or queue.
+*   **Configuration Management (.env):** All sensitive configuration and environment variables (such as database credentials, API keys, mail settings, etc.) will be stored in `.env` file. During Docker deployment, these variables will be injected into the container via environment variables, ensuring the application can be configured without rebuilding the image. Important `.env` variables example:
     *   `APP_NAME=tis_gateway`
     *   `APP_ENV=production`
     *   `APP_KEY=base64:your_app_key`
@@ -188,11 +188,11 @@ Aplikasi akan didistribusikan menggunakan Docker Container untuk kemudahan deplo
     *   `DB_USERNAME=user`
     *   `DB_PASSWORD=password`
     *   `TIS_API_KEY=your_secret_api_key`
-*   **Persistent Storage:** Data yang perlu dipertahankan (seperti database, uploaded files) akan menggunakan Docker volumes untuk memastikan data tidak hilang ketika container di-restart atau dihapus.
+*   **Persistent Storage:** Data that needs to be retained (such as database, uploaded files) will use Docker volumes to ensure data is not lost when containers are restarted or removed.
 
 ## 10. Progress & Tracking
 
-Dokumen ini akan diupdate secara berkala untuk melacak progress implementasi, gaps, dan next steps.
+This document will be updated periodically to track implementation progress, gaps, and next steps.
 
 ### 10.1. Completed Tasks
 

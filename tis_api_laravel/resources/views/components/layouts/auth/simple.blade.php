@@ -29,10 +29,10 @@
                     </div>
 
                     <h1 class="text-3xl font-bold text-white leading-tight mb-3" style="letter-spacing:-0.03em">
-                        Traction Information<br>System Gateway
+                        Train Information<br>System Gateway
                     </h1>
                     <p class="text-base mb-10 leading-relaxed" style="color:#94a3b8">
-                        Platform pemantauan dan analisis kegagalan<br>sistem traksi trainset MRT Jakarta.
+                        Platform pemantauan dan analisis kegagalan<br>sistem trainset MRT Jakarta.
                     </p>
 
                     <div class="space-y-3.5">
@@ -42,7 +42,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                                 </svg>
                             </div>
-                            <span class="text-sm" style="color:#cbd5e1">Dashboard analitik & chart interaktif</span>
+                            <span class="text-sm" style="color:#cbd5e1">Analytics dashboard & interactive charts</span>
                         </div>
                         <div class="flex items-center gap-3">
                             <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg" style="background:rgba(239,68,68,0.18)">
@@ -100,6 +100,7 @@
             </div>
 
         </div>
+
         @fluxScripts
     </body>
 </html>

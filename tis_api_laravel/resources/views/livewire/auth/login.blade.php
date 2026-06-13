@@ -73,7 +73,7 @@ new #[Layout('components.layouts.auth')] class extends Component {
 }; ?>
 
 <div class="flex flex-col gap-6">
-    <x-auth-header title="Masuk ke Sistem" description="Gunakan email dan password Anda untuk mengakses TIS Gateway" />
+    <x-auth-header title="Login to System" description="Use your email and password to access TIS Gateway" />
 
     <!-- Session Status -->
     <x-auth-session-status class="text-center" :status="session('status')" />
@@ -105,11 +105,11 @@ new #[Layout('components.layouts.auth')] class extends Component {
         <flux:checkbox wire:model="remember" label="{{ __('Remember me') }}" />
 
         <div class="flex items-center justify-end">
-            <flux:button variant="primary" type="submit" class="w-full">{{ __('Masuk') }}</flux:button>
+            <flux:button variant="primary" type="submit" class="w-full">{{ __('Login') }}</flux:button>
         </div>
     </form>
 
     <div class="text-center text-xs text-zinc-600 dark:text-zinc-500">
-        Hubungi administrator untuk mendapatkan akses.
+        Contact administrator for access.
     </div>
 </div>

@@ -88,10 +88,10 @@ class CSVExporter:
     def _generate_filename(self, dt: datetime, rake_id: int) -> str:
         """
         Generate nama file sesuai konvensi PTU.
-        Format: D{YYMMDD}_{rake_id:03d}.csv
-        Contoh: D260507_005.csv
+        Format: D{YYMMDD}_TS{rake_id:02d}_{HHMMSS}.csv
+        Contoh: D260612_TS08_143522.csv
         """
         prefix = config.output.filename_prefix
         date   = dt.strftime("%y%m%d")
-        return f"{prefix}{date}_{rake_id:03d}.csv"
-
+        time   = dt.strftime("%H%M%S")
+        return f"{prefix}{date}_TS{rake_id:02d}_{time}.csv"

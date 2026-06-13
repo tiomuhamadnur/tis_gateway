@@ -18,6 +18,10 @@ Route::middleware('api.key')->group(function () {
 
     // Files
     Route::post('/files', [FileController::class, 'store']);
+    Route::get('/files/{fileId}/download', [FileController::class, 'download']);
+    Route::get('/files/sessions/{sessionId}', [FileController::class, 'indexBySession']);
+    Route::get('/files/sessions/{sessionId}/{kind}', [FileController::class, 'downloadBySession'])
+        ->whereIn('kind', ['csv', 'pdf']);
 
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index']);

@@ -1,16 +1,16 @@
 # TIS Gateway - Backend API & Dashboard
 
-Aplikasi monolith Laravel 12 untuk menerima, menyimpan, dan mengelola data failure records dari TIS Gateway (Python). Dilengkapi dengan dashboard interaktif, user management CMS, dan API endpoints untuk integrasi eksternal.
+A monolithic Laravel 12 application for receiving, storing, and managing failure records data from TIS Gateway (Python). Equipped with an interactive dashboard, user management CMS, and API endpoints for external integration.
 
-## 🎯 Fitur Utama
+## 🎯 Key Features
 
-- **API Endpoints** - RESTful API untuk submit failure records dan files
-- **Dashboard** - Analytics dan statistik real-time dengan Highcharts
-- **User Management** - CRUD users dengan role-based access control (RBAC) menggunakan Spatie Permission
-- **Data Tables** - Interactive data tables dengan Yajra DataTables
-- **Export** - Export data ke Excel dan PDF
-- **Authentication** - Bearer token authentication untuk API, session-based untuk web
-- **Docker Support** - Siap untuk deployment dengan Docker Compose
+- **API Endpoints** - RESTful API for submitting failure records and files
+- **Dashboard** - Real-time analytics and statistics with Highcharts
+- **User Management** - CRUD users with role-based access control (RBAC) using Spatie Permission
+- **Data Tables** - Interactive data tables with Yajra DataTables
+- **Export** - Export data to Excel and PDF
+- **Authentication** - Bearer token authentication for API, session-based for web
+- **Docker Support** - Ready for deployment with Docker Compose
 
 ## 📋 Tech Stack
 
@@ -30,8 +30,8 @@ Aplikasi monolith Laravel 12 untuk menerima, menyimpan, dan mengelola data failu
 - PHP 8.2+
 - Composer
 - Node.js 18+
-- MySQL 8.0+ atau SQLite
-- Docker & Docker Compose (untuk production)
+- MySQL 8.0+ or SQLite
+- Docker & Docker Compose (for production)
 
 ### Development Setup
 
@@ -67,7 +67,7 @@ php artisan serve
 npm run dev
 ```
 
-Aplikasi akan berjalan di `http://localhost:8000`
+The application will run at `http://localhost:8000`
 
 ### Login Credentials
 
@@ -91,7 +91,7 @@ Viewer User:
 ## 🐳 Docker Deployment
 
 ```bash
-# Build dan start containers
+# Build and start containers
 docker-compose up -d
 
 # Run migrations in container
@@ -109,7 +109,7 @@ docker-compose logs -f app
 
 ### Environment Configuration
 
-Edit `.env` untuk konfigurasi:
+Edit `.env` for configuration:
 
 ```env
 APP_ENV=development/production
@@ -124,7 +124,7 @@ TIS_API_KEY=your_secret_api_key
 
 ## 📡 API Endpoints
 
-Semua endpoints memerlukan `Authorization: Bearer {TIS_API_KEY}` header.
+All endpoints require `Authorization: Bearer {TIS_API_KEY}` header.
 
 ### Submit Failure Records
 
@@ -156,7 +156,7 @@ Authorization: Bearer {TIS_API_KEY}
 
 Form Data:
 - rake_id: RAKE-001
-- file: [CSV atau PDF file]
+- file: [CSV or PDF file]
 ```
 
 ### List Failure Sessions
@@ -219,27 +219,27 @@ php artisan test --watch
 
 Test Coverage:
 - ✅ 7 API endpoint tests passing
-- ✅ Feature tests untuk Livewire components
+- ✅ Feature tests for Livewire components
 - ✅ Authentication & authorization tests
 
 ## 📊 Database Schema
 
 ### Tables
 
-- **users** - User accounts dengan encryption
-- **roles** - Spatie roles untuk RBAC
+- **users** - User accounts with encryption
+- **roles** - Spatie roles for RBAC
 - **permissions** - Spatie permissions
-- **failure_sessions** - Session data dari TIS Gateway
+- **failure_sessions** - Session data from TIS Gateway
 - **failure_records** - Individual failure records
-- **uploaded_files** - Metadata file yang di-upload
-- **rakes** - Master data kereta
+- **uploaded_files** - Metadata of uploaded files
+- **rakes** - Master data for trains
 
 ## 🔐 Security Features
 
-- ✅ API Key authentication untuk endpoints eksternal
-- ✅ Session-based authentication untuk web UI
+- ✅ API Key authentication for external endpoints
+- ✅ Session-based authentication for web UI
 - ✅ Role-Based Access Control (RBAC)
-- ✅ Password hashing dengan bcrypt
+- ✅ Password hashing with bcrypt
 - ✅ CSRF protection
 - ✅ SQL injection prevention (Eloquent ORM)
 - ✅ XSS protection (Blade escaping)

@@ -2,12 +2,12 @@
     <div class="flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-bold tracking-tight">User Management</h1>
-            <p class="text-sm text-zinc-500 dark:text-zinc-400">Kelola akun pengguna dan role akses</p>
+            <p class="text-sm text-zinc-500 dark:text-zinc-400">Manage user accounts and access roles</p>
         </div>
         @can('manage users')
         <button wire:click="openCreateModal" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            Tambah User
+            Add New User
         </button>
         @endcan
     </div>
@@ -30,7 +30,7 @@
         <div class="flex items-center gap-3 border-b border-zinc-200 px-5 py-4 dark:border-zinc-700">
             <div class="relative flex-1 max-w-sm">
                 <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                <input wire:model.live.debounce.300ms="search" type="text" placeholder="Cari nama atau email..." class="w-full rounded-lg border border-zinc-200 bg-zinc-50 py-2 pl-9 pr-4 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100 dark:placeholder-zinc-400">
+                <input wire:model.live.debounce.300ms="search" type="text" placeholder="Search name or email..." class="w-full rounded-lg border border-zinc-200 bg-zinc-50 py-2 pl-9 pr-4 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100 dark:placeholder-zinc-400">
             </div>
         </div>
 
@@ -38,11 +38,11 @@
             <table class="min-w-full divide-y divide-zinc-200 dark:divide-zinc-700">
                 <thead class="bg-zinc-50 dark:bg-zinc-900/50">
                     <tr>
-                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">Nama</th>
+                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">Name</th>
                         <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">Email</th>
                         <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">Roles</th>
-                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">Dibuat</th>
-                        <th class="px-5 py-3 text-right text-xs font-medium uppercase tracking-wider text-zinc-500">Aksi</th>
+                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">Created</th>
+                        <th class="px-5 py-3 text-right text-xs font-medium uppercase tracking-wider text-zinc-500">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-zinc-200 bg-white dark:divide-zinc-700 dark:bg-zinc-800">
@@ -75,8 +75,8 @@
                                 Edit
                             </button>
                             @if($user->id !== auth()->id())
-                            <button wire:click="deleteUser({{ $user->id }})" wire:confirm="Yakin hapus user '{{ $user->name }}'?" class="inline-flex items-center rounded-md border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-700 shadow-sm hover:bg-red-100 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
-                                Hapus
+                            <button wire:click="deleteUser({{ $user->id }})" wire:confirm="Are you sure you want to delete user '{{ $user->name }}'?" class="inline-flex items-center rounded-md border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-700 shadow-sm hover:bg-red-100 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
+                                Delete
                             </button>
                             @endif
                             @endcan
@@ -86,9 +86,9 @@
                     <tr>
                         <td colspan="5" class="px-5 py-12 text-center text-sm text-zinc-400">
                             @if($search)
-                            Tidak ada user yang cocok dengan "{{ $search }}"
+                            No users matching "{{ $search }}"
                             @else
-                            Belum ada user.
+                            No users yet.
                             @endif
                         </td>
                     </tr>
@@ -107,7 +107,7 @@
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
         <div class="w-full max-w-md rounded-xl border border-zinc-200 bg-white shadow-xl dark:border-zinc-700 dark:bg-zinc-800">
             <div class="flex items-center justify-between border-b border-zinc-200 px-6 py-4 dark:border-zinc-700">
-                <h3 class="text-base font-semibold text-zinc-900 dark:text-zinc-100">Tambah User Baru</h3>
+                <h3 class="text-base font-semibold text-zinc-900 dark:text-zinc-100">Add New User</h3>
                 <button wire:click="$set('showCreateModal', false)" class="text-zinc-400 hover:text-zinc-600">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
@@ -129,7 +129,7 @@
                     @error('password') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                 </div>
                 <div>
-                    <label class="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Konfirmasi Password</label>
+                    <label class="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Confirm Password</label>
                     <input wire:model="password_confirmation" type="password" class="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100">
                 </div>
                 <div>
@@ -144,8 +144,8 @@
                     </div>
                 </div>
                 <div class="flex justify-end gap-3 pt-2">
-                    <button type="button" wire:click="$set('showCreateModal', false)" class="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-300">Batal</button>
-                    <button type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Simpan</button>
+                    <button type="button" wire:click="$set('showCreateModal', false)" class="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-300">Cancel</button>
+                    <button type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Save</button>
                 </div>
             </form>
         </div>
@@ -164,7 +164,7 @@
             </div>
             <form wire:submit="updateUser" class="space-y-4 px-6 py-5">
                 <div>
-                    <label class="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Nama</label>
+                    <label class="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Name</label>
                     <input wire:model="name" type="text" class="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100">
                     @error('name') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                 </div>
@@ -174,12 +174,12 @@
                     @error('email') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                 </div>
                 <div>
-                    <label class="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Password Baru (kosongkan jika tidak diubah)</label>
+                    <label class="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">New Password (leave blank if unchanged)</label>
                     <input wire:model="password" type="password" class="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100">
                     @error('password') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                 </div>
                 <div>
-                    <label class="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Konfirmasi Password Baru</label>
+                    <label class="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Confirm New Password</label>
                     <input wire:model="password_confirmation" type="password" class="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100">
                 </div>
                 <div>
@@ -194,7 +194,7 @@
                     </div>
                 </div>
                 <div class="flex justify-end gap-3 pt-2">
-                    <button type="button" wire:click="$set('showEditModal', false)" class="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-300">Batal</button>
+                    <button type="button" wire:click="$set('showEditModal', false)" class="rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-300">Cancel</button>
                     <button type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Update</button>
                 </div>
             </form>

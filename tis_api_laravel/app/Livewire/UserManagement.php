@@ -54,7 +54,7 @@ class UserManagement extends Component
 
         $this->resetForm();
         $this->showCreateModal = false;
-        session()->flash('success', 'User berhasil dibuat.');
+        session()->flash('success', 'User created successfully.');
     }
 
     public function editUser(int $userId): void
@@ -93,18 +93,18 @@ class UserManagement extends Component
 
         $this->resetForm();
         $this->showEditModal = false;
-        session()->flash('success', 'User berhasil diupdate.');
+        session()->flash('success', 'User updated successfully.');
     }
 
     public function deleteUser(int $userId): void
     {
         if ($userId === auth()->id()) {
-            session()->flash('error', 'Tidak dapat menghapus akun sendiri.');
+            session()->flash('error', 'Cannot delete your own account.');
             return;
         }
 
         User::findOrFail($userId)->delete();
-        session()->flash('success', 'User berhasil dihapus.');
+        session()->flash('success', 'User deleted successfully.');
     }
 
     private function resetForm(): void

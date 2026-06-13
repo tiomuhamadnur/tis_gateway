@@ -1,2 +1,31 @@
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Python cache and local test artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Runtime outputs
 /logs
 /output
+*.log
+
+# Laravel dependencies and build output
+tis_api_laravel/vendor/
+tis_api_laravel/node_modules/
+tis_api_laravel/storage/*.key
+tis_api_laravel/storage/logs/
+tis_api_laravel/storage/framework/cache/
+tis_api_laravel/storage/framework/sessions/
+tis_api_laravel/storage/framework/views/
+tis_api_laravel/bootstrap/cache/

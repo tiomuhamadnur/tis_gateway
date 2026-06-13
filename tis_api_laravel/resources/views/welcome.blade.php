@@ -625,7 +625,7 @@
                 </div>
                 <div>
                     <div class="brand-title">TIS Gateway</div>
-                    <div class="brand-subtitle">Traction Intelligence Layer • MRT Jakarta</div>
+                    <div class="brand-subtitle">TIS Intelligence Layer • MRT Jakarta</div>
                 </div>
             </a>
 
@@ -635,7 +635,7 @@
                     @auth
                         <a href="{{ url('/dashboard') }}" class="btn btn-primary">Open dashboard</a>
                     @else
-                        <a href="{{ route('login') }}" class="btn btn-outline">Masuk</a>
+                        <a href="{{ route('login') }}" class="btn btn-outline">Login</a>
                     @endauth
                 @endif
             </div>
@@ -643,20 +643,20 @@
 
         <section class="hero">
             <div class="hero-copy">
-                <div class="eyebrow">Traction monitoring platform</div>
-                <h1>Operasi yang terlihat sebelum gangguan terasa.</h1>
+                <div class="eyebrow">TIS monitoring platform</div>
+                <h1>Operations visible before failures are felt.</h1>
                 <p>
-                    TIS Gateway menyatukan fault telemetry, histori session, dan insight pemeliharaan ke dalam satu
-                    layer operasional yang lebih presisi. Tampilan dibuat untuk kontrol cepat, bukan sekadar landing page generik.
+                    TIS Gateway unifies fault telemetry, session history, and maintenance insights into a single
+                    operational layer for greater precision. Built for quick control, not just a generic landing page.
                 </p>
 
                 <div class="hero-actions">
                     @auth
-                        <a href="{{ url('/dashboard') }}" class="btn btn-primary">Masuk ke dashboard</a>
+                        <a href="{{ url('/dashboard') }}" class="btn btn-primary">Open Dashboard</a>
                     @else
-                        <a href="{{ route('login') }}" class="btn btn-primary">Masuk ke sistem</a>
+                        <a href="{{ route('login') }}" class="btn btn-primary">Login to System</a>
                     @endauth
-                    <a href="#insight" class="btn btn-outline">Lihat capability</a>
+                    <a href="#insight" class="btn btn-outline">View Capabilities</a>
                 </div>
 
                 <div class="hero-meta">
@@ -734,10 +734,10 @@
                 <div class="insight-card">
                     <div class="section-heading">
                         <div class="eyebrow">Operational flow</div>
-                        <h2>Dari event mentah ke keputusan maintenance.</h2>
+                        <h2>From raw events to maintenance decisions.</h2>
                         <p>
-                            Fokus utamanya bukan dekorasi, tapi rasa kontrol. Setiap blok dirancang seperti panel operasi:
-                            status cepat, event kritis, dan jalur tindakan yang langsung terbaca.
+                            The main focus is not decoration, but control feel. Each block is designed like an operations panel:
+                            quick status, critical events, and directly readable action paths.
                         </p>
                     </div>
 
@@ -745,24 +745,24 @@
                         <div class="timeline-item">
                             <div class="timeline-time">00:00-06:00</div>
                             <div>
-                                <div class="timeline-title">Session ingest dan sinkronisasi parser</div>
-                                <div class="timeline-text">Data onboard diterima, dipetakan ke equipment, lalu dipersiapkan untuk analitik fault.</div>
+                                <div class="timeline-title">Session ingestion and parser synchronization</div>
+                                <div class="timeline-text">Onboard data received, mapped to equipment, then prepared for fault analytics.</div>
                             </div>
                             <div class="severity severity-stable">Stable</div>
                         </div>
                         <div class="timeline-item">
                             <div class="timeline-time">06:00-18:00</div>
                             <div>
-                                <div class="timeline-title">Monitoring fault aktif per trainset</div>
-                                <div class="timeline-text">Operator bisa membaca fault code, gerbong, timestamp, dan recovery path dari satu antarmuka.</div>
+                                <div class="timeline-title">Active fault monitoring per trainset</div>
+                                <div class="timeline-text">Operators can read fault codes, cars, timestamps, and recovery paths from one interface.</div>
                             </div>
                             <div class="severity severity-watch">Watch</div>
                         </div>
                         <div class="timeline-item">
                             <div class="timeline-time">18:00-24:00</div>
                             <div>
-                                <div class="timeline-title">Export dan evaluasi tren harian</div>
-                                <div class="timeline-text">Rekap Excel/PDF dan pareto equipment dipakai untuk prioritas inspeksi berikutnya.</div>
+                                <div class="timeline-title">Export and evaluate daily trends</div>
+                                <div class="timeline-text">Excel/PDF recap and equipment Pareto used for next inspection priorities.</div>
                             </div>
                             <div class="severity severity-critical">Priority</div>
                         </div>
@@ -773,20 +773,20 @@
             <div class="feature-list">
                 <div class="feature-card">
                     <div class="feature-kicker">01 • Analytics</div>
-                    <h3>Dashboard yang terasa seperti command surface.</h3>
-                    <p>Distribusi fault, tren session, dan equipment paling bermasalah ditampilkan sebagai insight operasional, bukan widget tempelan.</p>
+                    <h3>Dashboard that feels like a command surface.</h3>
+                    <p>Fault distribution, session trends, and most problematic equipment are displayed as operational insights, not just attached widgets.</p>
                 </div>
 
                 <div class="feature-card">
                     <div class="feature-kicker">02 • Traceability</div>
-                    <h3>Failure records yang lebih mudah diaudit.</h3>
-                    <p>Kode fault, deskripsi, gerbong, durasi, dan klasifikasi tetap jadi inti, tapi disajikan dengan hierarki visual yang lebih tegas.</p>
+                    <h3>Failure records made easier to audit.</h3>
+                    <p>Fault codes, descriptions, cars, duration, and classification remain at the core, but presented with clearer visual hierarchy.</p>
                 </div>
 
                 <div class="feature-card">
                     <div class="feature-kicker">03 • Secure exchange</div>
-                    <h3>REST gateway untuk alur data yang disiplin.</h3>
-                    <p>API key, upload file, dan akses statistik diposisikan sebagai bagian dari arsitektur kontrol data, bukan fitur sampingan.</p>
+                    <h3>REST gateway for disciplined data flow.</h3>
+                    <p>API keys, file uploads, and statistics access are positioned as part of data control architecture, not side features.</p>
                 </div>
             </div>
         </section>
@@ -794,19 +794,19 @@
         <section class="cta">
             <div>
                 <div class="eyebrow">Ready for operations</div>
-                <h2>Buka workspace monitoring dan lanjutkan ke fault intelligence.</h2>
-                <p>Landing page ini sekarang lebih tajam, lebih modern, dan lebih nyambung ke sistem rail operations dibanding gaya template AI yang generik.</p>
+                <h2>Open monitoring workspace and proceed to fault intelligence.</h2>
+                <p>This landing page is now sharper, more modern, and better aligned with rail operations systems compared to generic AI template styles.</p>
             </div>
             @auth
-                <a href="{{ url('/dashboard') }}" class="btn btn-primary">Open dashboard</a>
+                <a href="{{ url('/dashboard') }}" class="btn btn-primary">Open Dashboard</a>
             @else
-                <a href="{{ route('login') }}" class="btn btn-primary">Masuk sekarang</a>
+                <a href="{{ route('login') }}" class="btn btn-primary">Login Now</a>
             @endauth
         </section>
 
         <footer class="footer">
             <span>&copy; {{ date('Y') }} PT MRT Jakarta</span>
-            <span>Traction Information System Gateway</span>
+            <span>Train Information System Gateway</span>
         </footer>
     </div>
 </body>

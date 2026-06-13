@@ -2,7 +2,7 @@
     <div class="flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-bold tracking-tight">Dashboard</h1>
-            <p class="text-sm text-zinc-500 dark:text-zinc-400">Monitor failure records dan statistik sistem</p>
+            <p class="text-sm text-zinc-500 dark:text-zinc-400">Monitor failure records and system statistics</p>
         </div>
     </div>
 
@@ -46,14 +46,14 @@
             x-ref="picker"
             type="text"
             readonly
-            placeholder="Pilih rentang tanggal..."
+            placeholder="Select date range..."
             class="flex-1 min-w-[200px] bg-transparent text-sm text-zinc-700 placeholder-zinc-400 focus:outline-none cursor-pointer dark:text-zinc-200 dark:placeholder-zinc-500"
         >
         <button @click="apply()" class="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 transition-colors">
             <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/>
             </svg>
-            Terapkan
+            Apply
         </button>
         <button @click="reset()" class="inline-flex items-center rounded-lg border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-50 transition-colors dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-700">
             Reset

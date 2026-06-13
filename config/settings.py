@@ -83,8 +83,8 @@ class OutputConfig:
     # Direktori output default
     output_dir: str = "./output"
 
-    # Format nama file: {rake_id}_{date}_{time}
-    # Contoh: D260507_005.csv / D260507_005.pdf
+    # Format nama file: D{YYMMDD}_TS{rake_id:02d}_{HHMMSS}
+    # Contoh: D260612_TS08_143522.csv / D260612_TS08_143522.pdf
     filename_prefix: str = "D"
 
     # Generate CSV?

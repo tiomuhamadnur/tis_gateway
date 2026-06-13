@@ -11,6 +11,7 @@ class UploadedFile extends Model
 
     protected $fillable = [
         'file_id',
+        'session_id',
         'rake_id',
         'filename',
         'original_filename',
@@ -19,4 +20,9 @@ class UploadedFile extends Model
         'size',
         'status',
     ];
+
+    public function session()
+    {
+        return $this->belongsTo(Session::class, 'session_id', 'session_id');
+    }
 }

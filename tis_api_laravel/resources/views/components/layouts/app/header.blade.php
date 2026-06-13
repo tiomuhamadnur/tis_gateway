@@ -18,6 +18,9 @@
                 <flux:navbar.item icon="chart-bar" href="{{ route('failures.index') }}" :current="request()->routeIs('failures.*')" wire:navigate>
                     Failure Records
                 </flux:navbar.item>
+                <flux:navbar.item icon="arrow-down-tray" href="{{ route('sessions.download.index') }}" :current="request()->routeIs('sessions.download.*')" wire:navigate>
+                    Session Downloads
+                </flux:navbar.item>
             </flux:navbar>
 
             <flux:spacer />
@@ -82,6 +85,9 @@
                     </flux:navlist.item>
                     <flux:navlist.item icon="chart-bar" href="{{ route('failures.index') }}" :current="request()->routeIs('failures.*')" wire:navigate>
                         Failure Records
+                    </flux:navlist.item>
+                    <flux:navlist.item icon="arrow-down-tray" href="{{ route('sessions.download.index') }}" :current="request()->routeIs('sessions.download.*')" wire:navigate>
+                        Session Downloads
                     </flux:navlist.item>
                 </flux:navlist.group>
             </flux:navlist>

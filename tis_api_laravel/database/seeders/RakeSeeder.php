@@ -9,14 +9,14 @@ use App\Models\Rake;
 class RakeSeeder extends Seeder
 {
     /**
-     * Seed 16 trainset aktual MRT Jakarta CP108.
+     * Seed 16 actual MRT Jakarta CP108 trainsets.
      *
-     * rake_id = nomor integer (sebagai string) yang dikirim TIS Gateway
-     * saat auto-detect handshake. TS-01 → rake_id "1", dst.
+     * rake_id = integer number (as string) sent by TIS Gateway
+     * during auto-detect handshake. TS-01 → rake_id "1", etc.
      *
-     * Formasi 6 car: Tc1 – M1 – M2 – M1' – M2' – Tc2
-     * Jalur: Koridor 1 Lebak Bulus Grab – Bundaran HI
-     * Manufaktur: Sumitomo Corporation (kontrak CP108)
+     * Formation 6 cars: Tc1 – M1 – M2 – M1' – M2' – Tc2
+     * Route: Corridor 1 Lebak Bulus Grab – Bundaran HI
+     * Manufacturer: Sumitomo Corporation (CP108 contract)
      */
     public function run(): void
     {

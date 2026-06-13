@@ -8,14 +8,13 @@ use Illuminate\Support\Facades\DB;
 class FaultPairingService
 {
     /**
-     * Pair semua record Occur(0) ↔ Recover(1) untuk satu rake_id.
+     * Pair all Occur(0) ↔ Recover(1) records for a single rake_id.
      *
-     * Algoritma greedy: untuk setiap Occur, cari Recover tercepat (timestamp > occur)
-     * dengan fault_code + car_no yang sama dan belum dipasangkan.
+     * Greedy algorithm: for each Occur, find the fastest Recover (timestamp > occur)
+     * with the same fault_code + car_no and not yet paired.
      *
-     * Dipanggil setiap kali session baru diupload, sehingga record lama yang
-     * sebelumnya belum punya pasangan (masih aktif) bisa terpair dengan Recover
-     * yang baru masuk.
+     * Called each time a new session is uploaded, so old records that
+     * previously had no pair (still active) can be paired with newly incoming Recover records.
      */
     public function pairForRake(int $rakeId): void
     {
@@ -35,7 +34,7 @@ class FaultPairingService
         $updates = [];
 
         foreach ($occurs as $occur) {
-            // Cari Recover paling awal setelah timestamp Occur, belum dipakai
+            // Find earliest Recover after Occur timestamp, not yet used
             $match = $recovers->first(function ($r) use ($occur, $pairedRecoverIds) {
                 return $r->fault_code === $occur->fault_code
                     && $r->car_no    === $occur->car_no

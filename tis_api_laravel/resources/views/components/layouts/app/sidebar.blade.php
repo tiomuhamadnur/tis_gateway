@@ -29,6 +29,9 @@
                     <flux:navlist.item icon="exclamation-triangle" :href="route('failures.index')" :current="request()->routeIs('failures.*')" wire:navigate>
                         Failure Records
                     </flux:navlist.item>
+                    <flux:navlist.item icon="arrow-down-tray" :href="route('sessions.download.index')" :current="request()->routeIs('sessions.download.*')" wire:navigate>
+                        Session Downloads
+                    </flux:navlist.item>
                     @endcan
                 </flux:navlist.group>
 
@@ -51,11 +54,11 @@
 
             <flux:spacer />
 
-            <flux:navlist variant="outline">
+            {{-- <flux:navlist variant="outline">
                 <flux:navlist.item icon="cog-6-tooth" href="{{ route('settings.profile') }}" wire:navigate>
                     Settings
                 </flux:navlist.item>
-            </flux:navlist>
+            </flux:navlist> --}}
 
             <!-- Desktop User Menu -->
             <flux:dropdown position="bottom" align="start">

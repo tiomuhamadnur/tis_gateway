@@ -13,6 +13,7 @@ class Session extends Model
 
     protected $fillable = [
         'session_id',
+        'session_hash',
         'rake_id',
         'read_time',
         'download_date',
@@ -30,5 +31,10 @@ class Session extends Model
     public function failureRecords()
     {
         return $this->hasMany(FailureRecord::class);
+    }
+
+    public function uploadedFiles()
+    {
+        return $this->hasMany(UploadedFile::class, 'session_id', 'session_id');
     }
 }

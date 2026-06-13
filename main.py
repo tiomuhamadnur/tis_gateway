@@ -160,13 +160,21 @@ def main():
     # ── FASE 4: Upload ke cloud ───────────────────────────────────
     if config.cloud.enabled:
         uploader = CloudUploader()
-        uploader.upload_records(
+        session_response = uploader.upload_records(
             records   = result.records,
             rake_id   = rake_id,
             read_time = read_time,
         )
-        for fpath in exported_files:
-            uploader.upload_file(fpath, rake_id)
+        session_id = session_response.get("session_id") if session_response else None
+        is_duplicate = bool(session_response and session_response.get("status") == "duplicate")
+
+        if session_id and not is_duplicate:
+            for fpath in exported_files:
+                uploader.upload_file(fpath, rake_id, session_id=session_id)
+        elif not session_id:
+            log.warning("[MAIN] session_id tidak tersedia, upload file dilewati")
+        else:
+            log.info("[MAIN] Session duplikat, upload file dilewati")
 
     # ── Summary ───────────────────────────────────────────────────
     log.info("-" * 60)
