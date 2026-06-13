@@ -1,4 +1,4 @@
-<div class="flex items-start max-md:flex-col">
+<div class="flex items-start max-md:flex-col p-3 sm:p-4">
     <div class="mr-10 w-full pb-4 md:w-[220px]">
         <flux:navlist>
             <flux:navlist.item href="{{ route('settings.profile') }}" wire:navigate>Profile</flux:navlist.item>

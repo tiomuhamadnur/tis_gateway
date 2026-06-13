@@ -179,12 +179,15 @@
     </script>
     @endverbatim
     <style>
-        .method-get  { background:#14532d; color:#86efac; }
-        .method-post { background:#1e3a5f; color:#93c5fd; }
+        .method-get  { background:#dcfce7; color:#166534; }
+        .dark .method-get { background:#14532d; color:#86efac; }
+        .method-post { background:#dbeafe; color:#1e40af; }
+        .dark .method-post { background:#1e3a5f; color:#93c5fd; }
         .method-badge { display:inline-flex; align-items:center; font-size:.68rem; font-weight:700;
                         letter-spacing:.06em; padding:2px 7px; border-radius:4px; min-width:48px;
                         justify-content:center; flex-shrink:0; }
-        .nav-item.active { background: rgb(39 39 42); color: #fff; }
+        .nav-item.active { background: rgb(228 228 231); color: #18181b; }
+        .dark .nav-item.active { background: rgb(39 39 42); color: #fff; }
         .nav-item { transition: background .15s; border-radius: 6px; }
         .endpoint-section { scroll-margin-top: 24px; }
         .param-required { color: #f87171; font-size: .65rem; font-weight: 600; }
@@ -196,68 +199,68 @@
     @endpush
 
     {{-- ── Left sticky nav ── --}}
-    <aside class="hidden lg:flex flex-col gap-1 w-52 shrink-0 sticky top-0 self-start h-screen overflow-y-auto px-3 py-6 border-r border-zinc-700">
+    <aside class="hidden lg:flex flex-col gap-1 w-52 shrink-0 sticky top-0 self-start h-screen overflow-y-auto px-3 py-6 border-r border-zinc-200 dark:border-zinc-700">
         <p class="text-[10px] font-semibold uppercase tracking-widest text-zinc-500 px-2 mb-1">Endpoints</p>
 
-        <a href="#post-failures" x-on:click="active='post-failures'" :class="active==='post-failures' ? 'active' : ''" class="nav-item flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-400 hover:text-white">
+        <a href="#post-failures" x-on:click="active='post-failures'" :class="active==='post-failures' ? 'active' : ''" class="nav-item flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800">
             <span class="method-badge method-post">POST</span> /failures
         </a>
-        <a href="#get-failures" x-on:click="active='get-failures'" :class="active==='get-failures' ? 'active' : ''" class="nav-item flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-400 hover:text-white">
+        <a href="#get-failures" x-on:click="active='get-failures'" :class="active==='get-failures' ? 'active' : ''" class="nav-item flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800">
             <span class="method-badge method-get">GET</span> /failures
         </a>
-        <a href="#get-failure-id" x-on:click="active='get-failure-id'" :class="active==='get-failure-id' ? 'active' : ''" class="nav-item flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-400 hover:text-white">
+        <a href="#get-failure-id" x-on:click="active='get-failure-id'" :class="active==='get-failure-id' ? 'active' : ''" class="nav-item flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800">
             <span class="method-badge method-get">GET</span> /failures/:id
         </a>
-        <a href="#post-files" x-on:click="active='post-files'" :class="active==='post-files' ? 'active' : ''" class="nav-item flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-400 hover:text-white">
+        <a href="#post-files" x-on:click="active='post-files'" :class="active==='post-files' ? 'active' : ''" class="nav-item flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800">
             <span class="method-badge method-post">POST</span> /files
         </a>
 
         <p class="text-[10px] font-semibold uppercase tracking-widest text-zinc-500 px-2 mt-3 mb-1">Analytics</p>
-        <a href="#get-dashboard" x-on:click="active='get-dashboard'" :class="active==='get-dashboard' ? 'active' : ''" class="nav-item flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-400 hover:text-white">
+        <a href="#get-dashboard" x-on:click="active='get-dashboard'" :class="active==='get-dashboard' ? 'active' : ''" class="nav-item flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800">
             <span class="method-badge method-get">GET</span> /dashboard
         </a>
-        <a href="#get-trend" x-on:click="active='get-trend'" :class="active==='get-trend' ? 'active' : ''" class="nav-item flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-400 hover:text-white">
+        <a href="#get-trend" x-on:click="active='get-trend'" :class="active==='get-trend' ? 'active' : ''" class="nav-item flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800">
             <span class="method-badge method-get">GET</span> /trend
         </a>
-        <a href="#get-pareto" x-on:click="active='get-pareto'" :class="active==='get-pareto' ? 'active' : ''" class="nav-item flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-400 hover:text-white">
+        <a href="#get-pareto" x-on:click="active='get-pareto'" :class="active==='get-pareto' ? 'active' : ''" class="nav-item flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800">
             <span class="method-badge method-get">GET</span> /pareto
         </a>
 
         <p class="text-[10px] font-semibold uppercase tracking-widest text-zinc-500 px-2 mt-3 mb-1">System</p>
-        <a href="#get-health" x-on:click="active='get-health'" :class="active==='get-health' ? 'active' : ''" class="nav-item flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-400 hover:text-white">
+        <a href="#get-health" x-on:click="active='get-health'" :class="active==='get-health' ? 'active' : ''" class="nav-item flex items-center gap-2 px-2 py-1.5 text-xs text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800">
             <span class="method-badge method-get">GET</span> /health
         </a>
     </aside>
 
     {{-- ── Main content ── --}}
-    <main class="flex-1 min-w-0 px-6 py-6 space-y-2">
+    <main class="flex-1 min-w-0 p-3 sm:p-4 space-y-2">
 
         {{-- Page header --}}
         <div class="flex items-start justify-between gap-4 mb-6">
             <div>
-                <h1 class="text-xl font-bold text-zinc-100">API Reference</h1>
-                <p class="text-xs text-zinc-500 mt-0.5">Base URL: <code class="bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-300">{{ rtrim(config('app.url'), '/') }}/api/v1</code></p>
+                <h1 class="text-xl font-bold text-zinc-900 dark:text-zinc-100">API Reference</h1>
+                <p class="text-xs text-zinc-500 mt-0.5">Base URL: <code class="bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-700 dark:text-zinc-300">{{ rtrim(config('app.url'), '/') }}/api/v1</code></p>
             </div>
-            <button x-on:click="downloadPostman()" class="flex items-center gap-2 rounded-lg bg-orange-600 hover:bg-orange-500 px-3 py-2 text-xs font-semibold text-white transition shrink-0">
+            <button x-on:click="downloadPostman()" class="flex items-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 px-3 py-2 text-xs font-semibold text-white transition shrink-0">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm-1 14.41V7.59l5 4.41z"/></svg>
                 Download Postman Collection
             </button>
         </div>
 
         {{-- Auth banner --}}
-        <div class="flex items-center gap-3 rounded-lg border border-zinc-700 bg-zinc-800/50 px-4 py-3 mb-6">
-            <svg class="w-4 h-4 text-yellow-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m0 0v2m0-2h2m-2 0H10m9-7V8a7 7 0 10-14 0v2a2 2 0 00-2 2v5a2 2 0 002 2h14a2 2 0 002-2v-5a2 2 0 00-2-2z"/></svg>
-            <p class="text-xs text-zinc-300">All endpoints must include the <code class="bg-zinc-700 px-1 rounded">Authorization: Bearer {TIS_API_KEY}</code> header</p>
+        <div class="flex items-center gap-3 rounded-lg border border-zinc-200 bg-amber-50 px-4 py-3 mb-6 dark:border-zinc-700 dark:bg-zinc-800/50">
+            <svg class="w-4 h-4 text-amber-600 dark:text-yellow-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m0 0v2m0-2h2m-2 0H10m9-7V8a7 7 0 10-14 0v2a2 2 0 00-2 2v5a2 2 0 002 2h14a2 2 0 002-2v-5a2 2 0 00-2-2z"/></svg>
+            <p class="text-xs text-zinc-700 dark:text-zinc-300">All endpoints must include the <code class="bg-zinc-200 dark:bg-zinc-700 px-1 rounded">Authorization: Bearer {TIS_API_KEY}</code> header</p>
         </div>
 
         {{-- ═══ POST /failures ═══ --}}
-        <div id="post-failures" class="endpoint-section rounded-xl border border-zinc-700 bg-zinc-800/40 overflow-hidden">
-            <div class="flex items-center gap-3 px-5 py-3 border-b border-zinc-700/60">
+        <div id="post-failures" class="endpoint-section rounded-xl border border-zinc-200 bg-white shadow-sm overflow-hidden dark:border-zinc-700 dark:bg-zinc-800">
+            <div class="flex items-center gap-3 px-5 py-3 border-b border-zinc-200 dark:border-zinc-700/60">
                 <span class="method-badge method-post">POST</span>
-                <code class="text-sm font-mono text-zinc-100 font-semibold">/api/v1/failures</code>
+                <code class="text-sm font-mono text-zinc-900 dark:text-zinc-100 font-semibold">/api/v1/failures</code>
                 <span class="ml-auto text-xs text-zinc-500">Send batch failure records from TIS</span>
             </div>
-            <div class="grid lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-zinc-700/60">
+            <div class="grid lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-zinc-200 dark:divide-zinc-700/60">
                 {{-- Left: params --}}
                 <div class="p-5 space-y-4">
                     <div>
@@ -283,14 +286,14 @@
                             @endforeach
                         </div>
                     </div>
-                    <div class="rounded-lg border border-zinc-700/60 bg-zinc-900/60 px-3 py-2 text-xs text-zinc-400">
+                    <div class="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-600 dark:border-zinc-700/60 dark:bg-zinc-900/60 dark:text-zinc-400">
                         Response <span class="text-blue-400 font-mono font-semibold">201</span>: <code>session_id</code>, <code>received</code>, <code>status</code>
                     </div>
                 </div>
                 {{-- Right: example --}}
                 <div class="p-5 space-y-3">
                     <p class="text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Request Example</p>
-                    <div class="code-wrap rounded-lg overflow-hidden border border-zinc-700/40">
+                    <div class="code-wrap rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700/40">
                         <div class="code-header flex items-center justify-between px-3 py-1.5">
                             <span class="text-[10px] text-zinc-500">JSON</span>
                             <button x-on:click="copy($el)" class="text-[10px] text-zinc-400 hover:text-white transition">Copy</button>
@@ -310,7 +313,7 @@
 }</code></pre>
                     </div>
                     <p class="text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Response 201</p>
-                    <div class="code-wrap rounded-lg overflow-hidden border border-zinc-700/40">
+                    <div class="code-wrap rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700/40">
                         <div class="code-header flex items-center justify-between px-3 py-1.5">
                             <span class="text-[10px] text-zinc-500">JSON</span>
                             <button x-on:click="copy($el)" class="text-[10px] text-zinc-400 hover:text-white transition">Copy</button>
@@ -326,13 +329,13 @@
         </div>
 
         {{-- ═══ GET /failures ═══ --}}
-        <div id="get-failures" class="endpoint-section rounded-xl border border-zinc-700 bg-zinc-800/40 overflow-hidden">
-            <div class="flex items-center gap-3 px-5 py-3 border-b border-zinc-700/60">
+        <div id="get-failures" class="endpoint-section rounded-xl border border-zinc-200 bg-white shadow-sm overflow-hidden dark:border-zinc-700 dark:bg-zinc-800">
+            <div class="flex items-center gap-3 px-5 py-3 border-b border-zinc-200 dark:border-zinc-700/60">
                 <span class="method-badge method-get">GET</span>
-                <code class="text-sm font-mono text-zinc-100 font-semibold">/api/v1/failures</code>
+                <code class="text-sm font-mono text-zinc-900 dark:text-zinc-100 font-semibold">/api/v1/failures</code>
                 <span class="ml-auto text-xs text-zinc-500">Daftar session failure (paginated)</span>
             </div>
-            <div class="grid lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-zinc-700/60">
+            <div class="grid lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-zinc-200 dark:divide-zinc-700/60">
                 <div class="p-5 space-y-3">
                     <p class="text-[10px] font-semibold uppercase tracking-widest text-zinc-500 mb-2">Query Parameters</p>
                     @php $params = [
@@ -355,7 +358,7 @@
                 </div>
                 <div class="p-5 space-y-3">
                     <p class="text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Response 200 — paginated sessions</p>
-                    <div class="code-wrap rounded-lg overflow-hidden border border-zinc-700/40">
+                    <div class="code-wrap rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700/40">
                         <div class="code-header flex items-center justify-between px-3 py-1.5">
                             <span class="text-[10px] text-zinc-500">JSON</span>
                             <button x-on:click="copy($el)" class="text-[10px] text-zinc-400 hover:text-white transition">Copy</button>
@@ -385,13 +388,13 @@
         </div>
 
         {{-- ═══ GET /failures/{sessionId} ═══ --}}
-        <div id="get-failure-id" class="endpoint-section rounded-xl border border-zinc-700 bg-zinc-800/40 overflow-hidden">
-            <div class="flex items-center gap-3 px-5 py-3 border-b border-zinc-700/60">
+        <div id="get-failure-id" class="endpoint-section rounded-xl border border-zinc-200 bg-white shadow-sm overflow-hidden dark:border-zinc-700 dark:bg-zinc-800">
+            <div class="flex items-center gap-3 px-5 py-3 border-b border-zinc-200 dark:border-zinc-700/60">
                 <span class="method-badge method-get">GET</span>
-                <code class="text-sm font-mono text-zinc-100 font-semibold">/api/v1/failures/{sessionId}</code>
+                <code class="text-sm font-mono text-zinc-900 dark:text-zinc-100 font-semibold">/api/v1/failures/{sessionId}</code>
                 <span class="ml-auto text-xs text-zinc-500">Detail session beserta semua record</span>
             </div>
-            <div class="grid lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-zinc-700/60">
+            <div class="grid lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-zinc-200 dark:divide-zinc-700/60">
                 <div class="p-5 space-y-3">
                     <p class="text-[10px] font-semibold uppercase tracking-widest text-zinc-500 mb-2">Path Parameter</p>
                     <div class="flex items-start gap-3 text-xs">
@@ -400,13 +403,13 @@
                         <span class="param-required shrink-0">REQ</span>
                         <span class="text-zinc-400">UUID session returned from POST /failures</span>
                     </div>
-                    <div class="rounded-lg border border-red-900/40 bg-red-900/10 px-3 py-2 text-xs text-red-300 mt-3">
+                    <div class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 mt-3 dark:border-red-900/40 dark:bg-red-900/10 dark:text-red-300">
                         Returns <strong>404</strong> if sessionId is not found.
                     </div>
                 </div>
                 <div class="p-5 space-y-3">
                     <p class="text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Response 200</p>
-                    <div class="code-wrap rounded-lg overflow-hidden border border-zinc-700/40">
+                    <div class="code-wrap rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700/40">
                         <div class="code-header flex items-center justify-between px-3 py-1.5">
                             <span class="text-[10px] text-zinc-500">JSON</span>
                             <button x-on:click="copy($el)" class="text-[10px] text-zinc-400 hover:text-white transition">Copy</button>
@@ -438,15 +441,15 @@
         </div>
 
         {{-- ═══ POST /files ═══ --}}
-        <div id="post-files" class="endpoint-section rounded-xl border border-zinc-700 bg-zinc-800/40 overflow-hidden">
-            <div class="flex items-center gap-3 px-5 py-3 border-b border-zinc-700/60">
+        <div id="post-files" class="endpoint-section rounded-xl border border-zinc-200 bg-white shadow-sm overflow-hidden dark:border-zinc-700 dark:bg-zinc-800">
+            <div class="flex items-center gap-3 px-5 py-3 border-b border-zinc-200 dark:border-zinc-700/60">
                 <span class="method-badge method-post">POST</span>
-                <code class="text-sm font-mono text-zinc-100 font-semibold">/api/v1/files</code>
+                <code class="text-sm font-mono text-zinc-900 dark:text-zinc-100 font-semibold">/api/v1/files</code>
                 <span class="ml-auto text-xs text-zinc-500">Upload file CSV atau PDF (max 10 MB)</span>
             </div>
-            <div class="grid lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-zinc-700/60">
+            <div class="grid lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-zinc-200 dark:divide-zinc-700/60">
                 <div class="p-5 space-y-3">
-                    <div class="flex items-center gap-2 rounded-md bg-amber-900/20 border border-amber-800/40 px-3 py-2 text-xs text-amber-300 mb-3">
+                    <div class="flex items-center gap-2 rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-700 mb-3 dark:bg-amber-900/20 dark:border-amber-800/40 dark:text-amber-300">
                         <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z"/></svg>
                         Use <strong>multipart/form-data</strong>, not JSON.
                     </div>
@@ -468,7 +471,7 @@
                 </div>
                 <div class="p-5 space-y-3">
                     <p class="text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Request (curl) & Response 201</p>
-                    <div class="code-wrap rounded-lg overflow-hidden border border-zinc-700/40">
+                    <div class="code-wrap rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700/40">
                         <div class="code-header flex items-center justify-between px-3 py-1.5">
                             <span class="text-[10px] text-zinc-500">bash</span>
                             <button x-on:click="copy($el)" class="text-[10px] text-zinc-400 hover:text-white transition">Copy</button>
@@ -478,7 +481,7 @@
   -F "rake_id=KRL-001" \
   -F "file=@report.csv"</code></pre>
                     </div>
-                    <div class="code-wrap rounded-lg overflow-hidden border border-zinc-700/40">
+                    <div class="code-wrap rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700/40">
                         <div class="code-header flex items-center justify-between px-3 py-1.5">
                             <span class="text-[10px] text-zinc-500">JSON</span>
                             <button x-on:click="copy($el)" class="text-[10px] text-zinc-400 hover:text-white transition">Copy</button>
@@ -494,14 +497,14 @@
         </div>
 
         {{-- ═══ GET /dashboard ═══ --}}
-        <div id="get-dashboard" class="endpoint-section rounded-xl border border-zinc-700 bg-zinc-800/40 overflow-hidden">
-            <div class="flex items-center gap-3 px-5 py-3 border-b border-zinc-700/60">
+        <div id="get-dashboard" class="endpoint-section rounded-xl border border-zinc-200 bg-white shadow-sm overflow-hidden dark:border-zinc-700 dark:bg-zinc-800">
+            <div class="flex items-center gap-3 px-5 py-3 border-b border-zinc-200 dark:border-zinc-700/60">
                 <span class="method-badge method-get">GET</span>
-                <code class="text-sm font-mono text-zinc-100 font-semibold">/api/v1/dashboard</code>
+                <code class="text-sm font-mono text-zinc-900 dark:text-zinc-100 font-semibold">/api/v1/dashboard</code>
                 <span class="ml-auto text-xs text-zinc-500">Summary statistics — no parameters</span>
             </div>
             <div class="p-5">
-                <div class="code-wrap rounded-lg overflow-hidden border border-zinc-700/40">
+                <div class="code-wrap rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700/40">
                     <div class="code-header flex items-center justify-between px-3 py-1.5">
                         <span class="text-[10px] text-zinc-500">Response 200</span>
                         <button x-on:click="copy($el)" class="text-[10px] text-zinc-400 hover:text-white transition">Copy</button>
@@ -535,13 +538,13 @@
         </div>
 
         {{-- ═══ GET /analytics/trend ═══ --}}
-        <div id="get-trend" class="endpoint-section rounded-xl border border-zinc-700 bg-zinc-800/40 overflow-hidden">
-            <div class="flex items-center gap-3 px-5 py-3 border-b border-zinc-700/60">
+        <div id="get-trend" class="endpoint-section rounded-xl border border-zinc-200 bg-white shadow-sm overflow-hidden dark:border-zinc-700 dark:bg-zinc-800">
+            <div class="flex items-center gap-3 px-5 py-3 border-b border-zinc-200 dark:border-zinc-700/60">
                 <span class="method-badge method-get">GET</span>
-                <code class="text-sm font-mono text-zinc-100 font-semibold">/api/v1/analytics/trend</code>
+                <code class="text-sm font-mono text-zinc-900 dark:text-zinc-100 font-semibold">/api/v1/analytics/trend</code>
                 <span class="ml-auto text-xs text-zinc-500">Number of failures trend per period</span>
             </div>
-            <div class="grid lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-zinc-700/60">
+            <div class="grid lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-zinc-200 dark:divide-zinc-700/60">
                 <div class="p-5 space-y-2">
                     <p class="text-[10px] font-semibold uppercase tracking-widest text-zinc-500 mb-2">Query Parameters</p>
                     @php $p = [
@@ -561,7 +564,7 @@
                 </div>
                 <div class="p-5 space-y-3">
                     <p class="text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Response 200</p>
-                    <div class="code-wrap rounded-lg overflow-hidden border border-zinc-700/40">
+                    <div class="code-wrap rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700/40">
                         <div class="code-header flex items-center justify-between px-3 py-1.5">
                             <span class="text-[10px] text-zinc-500">JSON</span>
                             <button x-on:click="copy($el)" class="text-[10px] text-zinc-400 hover:text-white transition">Copy</button>
@@ -578,13 +581,13 @@
         </div>
 
         {{-- ═══ GET /analytics/pareto ═══ --}}
-        <div id="get-pareto" class="endpoint-section rounded-xl border border-zinc-700 bg-zinc-800/40 overflow-hidden">
-            <div class="flex items-center gap-3 px-5 py-3 border-b border-zinc-700/60">
+        <div id="get-pareto" class="endpoint-section rounded-xl border border-zinc-200 bg-white shadow-sm overflow-hidden dark:border-zinc-700 dark:bg-zinc-800">
+            <div class="flex items-center gap-3 px-5 py-3 border-b border-zinc-200 dark:border-zinc-700/60">
                 <span class="method-badge method-get">GET</span>
-                <code class="text-sm font-mono text-zinc-100 font-semibold">/api/v1/analytics/pareto</code>
+                <code class="text-sm font-mono text-zinc-900 dark:text-zinc-100 font-semibold">/api/v1/analytics/pareto</code>
                 <span class="ml-auto text-xs text-zinc-500">Analisis Pareto — fault terbanyak + % kumulatif</span>
             </div>
-            <div class="grid lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-zinc-700/60">
+            <div class="grid lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-zinc-200 dark:divide-zinc-700/60">
                 <div class="p-5 space-y-2">
                     <p class="text-[10px] font-semibold uppercase tracking-widest text-zinc-500 mb-2">Query Parameters <span class="normal-case font-normal text-zinc-600">(semua opsional)</span></p>
                     @php $p = [
@@ -605,7 +608,7 @@
                 </div>
                 <div class="p-5 space-y-3">
                     <p class="text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Response 200</p>
-                    <div class="code-wrap rounded-lg overflow-hidden border border-zinc-700/40">
+                    <div class="code-wrap rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700/40">
                         <div class="code-header flex items-center justify-between px-3 py-1.5">
                             <span class="text-[10px] text-zinc-500">JSON</span>
                             <button x-on:click="copy($el)" class="text-[10px] text-zinc-400 hover:text-white transition">Copy</button>
@@ -621,14 +624,14 @@
         </div>
 
         {{-- ═══ GET /health ═══ --}}
-        <div id="get-health" class="endpoint-section rounded-xl border border-zinc-700 bg-zinc-800/40 overflow-hidden">
-            <div class="flex items-center gap-3 px-5 py-3 border-b border-zinc-700/60">
+        <div id="get-health" class="endpoint-section rounded-xl border border-zinc-200 bg-white shadow-sm overflow-hidden dark:border-zinc-700 dark:bg-zinc-800">
+            <div class="flex items-center gap-3 px-5 py-3 border-b border-zinc-200 dark:border-zinc-700/60">
                 <span class="method-badge method-get">GET</span>
-                <code class="text-sm font-mono text-zinc-100 font-semibold">/api/v1/health</code>
+                <code class="text-sm font-mono text-zinc-900 dark:text-zinc-100 font-semibold">/api/v1/health</code>
                 <span class="ml-auto text-xs text-zinc-500">Health check — no parameters</span>
             </div>
             <div class="p-5">
-                <div class="code-wrap rounded-lg overflow-hidden border border-zinc-700/40 max-w-xs">
+                <div class="code-wrap rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700/40 max-w-xs">
                     <div class="code-header flex items-center justify-between px-3 py-1.5">
                         <span class="text-[10px] text-zinc-500">Response 200</span>
                         <button x-on:click="copy($el)" class="text-[10px] text-zinc-400 hover:text-white transition">Copy</button>
@@ -642,21 +645,21 @@
         </div>
 
         {{-- Error codes --}}
-        <div class="rounded-xl border border-zinc-700 bg-zinc-800/40 overflow-hidden">
-            <div class="px-5 py-3 border-b border-zinc-700/60">
-                <p class="text-sm font-semibold text-zinc-300">Error Codes</p>
+        <div class="rounded-xl border border-zinc-200 bg-white shadow-sm overflow-hidden dark:border-zinc-700 dark:bg-zinc-800">
+            <div class="px-5 py-3 border-b border-zinc-200 dark:border-zinc-700/60">
+                <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Error Codes</p>
             </div>
             <div class="p-5 grid grid-cols-2 lg:grid-cols-4 gap-3">
                 @php $errors = [
-                    ['401','Unauthorized','Invalid or missing API key','text-yellow-400'],
-                    ['404','Not Found','Resource not found in database','text-orange-400'],
-                    ['422','Unprocessable','Field validation failed','text-red-400'],
-                    ['500','Server Error','Check storage/logs/laravel.log','text-red-500'],
+                    ['401','Unauthorized','Invalid or missing API key','text-amber-600 dark:text-yellow-400'],
+                    ['404','Not Found','Resource not found in database','text-orange-600 dark:text-orange-400'],
+                    ['422','Unprocessable','Field validation failed','text-red-600 dark:text-red-400'],
+                    ['500','Server Error','Check storage/logs/laravel.log','text-red-700 dark:text-red-500'],
                 ]; @endphp
                 @foreach($errors as [$code, $label, $desc, $color])
-                <div class="rounded-lg bg-zinc-900/60 border border-zinc-700/40 p-3 space-y-1">
+                <div class="rounded-lg bg-zinc-50 border border-zinc-200 p-3 space-y-1 dark:bg-zinc-900/60 dark:border-zinc-700/40">
                     <p class="font-mono font-bold text-sm {{ $color }}">{{ $code }}</p>
-                    <p class="text-xs font-semibold text-zinc-300">{{ $label }}</p>
+                    <p class="text-xs font-semibold text-zinc-700 dark:text-zinc-300">{{ $label }}</p>
                     <p class="text-[11px] text-zinc-500">{{ $desc }}</p>
                 </div>
                 @endforeach
