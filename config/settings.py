@@ -134,6 +134,28 @@ class CloudConfig:
 
 
 # ─────────────────────────────────────────────
+# DAEMON — Loop & Session Management
+# ─────────────────────────────────────────────
+@dataclass
+class DaemonConfig:
+    # Interval antar loop utama (detik)
+    loop_interval_sec: int = 10
+
+    # Minimal jarak antar sesi download (menit).
+    # Jika sejak last_read_time belum melewati interval ini, download di-skip.
+    tis_interval_read_data_minutes: int = 4320  # 3 hari
+
+    # Maksimum folder yang tersimpan di output/raw/ sebelum di-prune
+    max_session_raw: int = 50
+
+    # Maksimum folder yang tersimpan di output/sent-cloud/ sebelum di-prune
+    max_session_sent: int = 200
+
+    # Maksimum retry upload cloud per sesi (di luar retry HTTP bawaan CloudUploader)
+    upload_max_retries: int = 5
+
+
+# ─────────────────────────────────────────────
 # LOGGING
 # ─────────────────────────────────────────────
 @dataclass
@@ -153,6 +175,12 @@ class LogConfig:
     # Rotasi log harian, simpan N hari
     log_retention_days: int = 30
 
+    # Ukuran maksimum file log sebelum rotate (fallback jika timed rotate gagal)
+    max_log_bytes: int = 10 * 1024 * 1024  # 10 MB
+
+    # Jumlah backup file log (size-based rotation)
+    log_backup_count: int = 5
+
 
 # ─────────────────────────────────────────────
 # MASTER CONFIG — gabungan semua
@@ -163,6 +191,7 @@ class GatewayConfig:
     session: SessionConfig = field(default_factory=SessionConfig)
     output: OutputConfig   = field(default_factory=OutputConfig)
     cloud: CloudConfig     = field(default_factory=CloudConfig)
+    daemon: DaemonConfig   = field(default_factory=DaemonConfig)
     log: LogConfig         = field(default_factory=LogConfig)
 
 
@@ -193,9 +222,33 @@ def load_from_env():
     val = os.getenv("CLOUD_ENABLED")
     if val and val.lower() in ("1", "true", "yes"):
         config.cloud.enabled = True
+    val = os.getenv("TIS_INTERVAL_READ_DATA")
+    if val:
+        config.daemon.tis_interval_read_data_minutes = int(val)
+    val = os.getenv("MAX_SESSION_RAW")
+    if val:
+        config.daemon.max_session_raw = int(val)
+    val = os.getenv("MAX_SESSION_SENT")
+    if val:
+        config.daemon.max_session_sent = int(val)
+    val = os.getenv("LOOP_INTERVAL_SEC")
+    if val:
+        config.daemon.loop_interval_sec = int(val)
+    val = os.getenv("UPLOAD_MAX_RETRIES")
+    if val:
+        config.daemon.upload_max_retries = int(val)
     val = os.getenv("LOG_LEVEL")
     if val:
         config.log.level = val
+    val = os.getenv("LOG_RETENTION_DAYS")
+    if val:
+        config.log.log_retention_days = int(val)
+    val = os.getenv("LOG_MAX_BYTES")
+    if val:
+        config.log.max_log_bytes = int(val)
+    val = os.getenv("LOG_BACKUP_COUNT")
+    if val:
+        config.log.log_backup_count = int(val)
 
 
 load_from_env()

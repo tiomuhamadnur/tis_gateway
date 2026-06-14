@@ -11,29 +11,33 @@ class SessionDownloads extends Component
     use WithPagination;
 
     public string $search = '';
-    public string $from = '';
-    public string $to = '';
+    public string $dateFrom = '';
+    public string $dateTo = '';
 
     public function updatingSearch(): void
     {
         $this->resetPage();
     }
 
-    public function updatingFrom(): void
+    public function applyFilter(string $from, string $to): void
     {
+        $this->dateFrom = $from;
+        $this->dateTo = $to;
         $this->resetPage();
     }
 
-    public function updatingTo(): void
+    public function resetFilter(): void
     {
+        $this->dateFrom = '';
+        $this->dateTo = '';
         $this->resetPage();
     }
 
     public function clearFilters(): void
     {
         $this->search = '';
-        $this->from = '';
-        $this->to = '';
+        $this->dateFrom = '';
+        $this->dateTo = '';
         $this->resetPage();
     }
 
@@ -53,8 +57,8 @@ class SessionDownloads extends Component
                         });
                 });
             })
-            ->when($this->from, fn ($query) => $query->whereDate('read_time', '>=', $this->from))
-            ->when($this->to, fn ($query) => $query->whereDate('read_time', '<=', $this->to))
+            ->when($this->dateFrom, fn ($query) => $query->whereDate('read_time', '>=', $this->dateFrom))
+            ->when($this->dateTo, fn ($query) => $query->whereDate('read_time', '<=', $this->dateTo))
             ->orderByDesc('read_time')
             ->paginate(10);
 

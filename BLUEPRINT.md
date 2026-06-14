@@ -24,6 +24,7 @@ TIS Gateway adalah aplikasi Python yang berfungsi sebagai bridge antara Train In
 │                 │    │                 │    │                 │
 │ - csv_exporter  │    │ - cloud_        │    │ - settings.py   │
 │ - pdf_exporter  │    │   uploader      │    │ - equipment_map │
+│ - json_exporter │    │                 │    │                 │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
@@ -37,8 +38,9 @@ main.py
 │   ├── protocol.commands (build packets)
 │   ├── parsers.response_parser (parse responses)
 │   └── parsers.record_parser (parse records)
-├── exporter.* (generate output)
-└── uploader.* (upload to cloud)
+├── exporter.* (generate JSON, CSV, PDF)
+├── uploader.* (upload JSON → CSV/PDF ke cloud)
+└── utils (timestamp persistensi, prune)
 ```
 
 ## 3. Spesifikasi Protokol TIS
@@ -204,50 +206,84 @@ class SessionConfig:
     post_handshake_delay_sec: float = 0.1
 ```
 
+## 4.4 DaemonConfig
+
+```python
+@dataclass
+class DaemonConfig:
+    loop_interval_sec: int = 10
+    tis_interval_read_data_minutes: int = 4320   # 3 hari
+    max_session_raw: int = 50
+    max_session_sent: int = 200
+    upload_max_retries: int = 5
+```
+
+
 ## 5. Flow Komunikasi Detail
 
-### 5.1 Sesi Lengkap
+### 5.1 Daemon Loop (Mode Baru)
+
+```
+daemon_loop (while not shutdown):
+│
+├── Phase 0: Ping TIS host
+│   ├── Gagal → sleep loop_interval → retry
+│   └── OK → lanjut
+│
+├── Phase 0b: Retry pending sessions (raw/ → upload → sent-cloud/)
+│   └── Untuk setiap folder di output/raw/ yang belum terkirim
+│
+├── Phase 1: Cek interval (TIS_INTERVAL_READ_DATA)
+│   ├── Jika masih dalam interval → sleep, loop lagi
+│   └── Jika sudah lewat → lanjut ke Phase 2
+│
+├── Phase 2: Download dari TIS
+│   ├── Handshake (CMD 0x20)
+│   ├── Download metadata (CMD 0x32)
+│   ├── Download dataset B (CMD 0x34)
+│   └── Download failure records (CMD 0x36)
+│
+├── Phase 3: Generate files → output/raw/{timestamp}_rake{id}/
+│   ├── records.json (source of truth — selalu)
+│   ├── D{YYMMDD}_TS{id}_{HHMMSS}.csv (jika --no-csv tidak diset)
+│   └── D{YYMMDD}_TS{id}_{HHMMSS}.pdf (jika --no-pdf tidak diset)
+│
+├── Phase 4: Upload ke cloud
+│   ├── POST JSON records → dapat session_id
+│   ├── POST CSV & PDF (multipart)
+│   ├── Sukses → move folder ke output/sent-cloud/
+│   └── Gagal → tetap di raw/, akan di-retry di loop berikutnya
+│
+├── Phase 5: Prune direktori
+│   ├── output/raw/ → hapus paling lama sampai ≤ MAX_SESSION_RAW
+│   └── output/sent-cloud/ → hapus paling lama sampai ≤ MAX_SESSION_SENT
+│
+└── Phase 6: Sleep LOOP_INTERVAL_SEC
+```
+
+### 5.2 One-Shot Sesi (Legacy — `--once`)
 
 ```
 1. Initialize UDP Socket
-   ├── Bind to local_port (263)
-   └── Set timeout & buffer
-
 2. Handshake Phase (CMD 0x20)
-   ├── Send fixed 12B packet (NO rake_id in request)
-   ├── Wait response 128B
-   ├── Extract rake_id dari payload[5]  ← auto-detection
-   └── Log [HS] rake_id auto-detected
-
-3. Download Phase
-   ├── CMD 0x32: 6 pages metadata (18B each)
-   ├── CMD 0x34: 6 pages dataset B (26B each)
-   └── CMD 0x36: 40 pages failure records
-       ├── Poll each page 3x
-       ├── Parse 5 records × 20B per page
-       └── Accumulate 200 records
-
-4. Export Phase
-   ├── Generate CSV (if enabled)
-   ├── Generate PDF (if enabled)
-   └── Save raw bytes (if --raw)
-
-5. Upload Phase (if --upload)
-   ├── POST JSON payload
-   └── Upload CSV/PDF files
-
-6. Cleanup
-   └── Close UDP socket
+3. Download Phase (CMD 0x32 / 0x34 / 0x36)
+4. Export Phase → output/raw/{timestamp}/
+5. Upload Phase (jika cloud enabled)
+   └─ Sukses → move ke sent-cloud, selesai
+   └─ Gagal → folder tetap di raw/
 ```
 
-### 5.2 Error Handling
+### 5.3 Error Handling
 
-- **Network Timeout**: Retry up to 3x dengan delay 0.5s
-- **Checksum Invalid**: Discard packet, retry
-- **Invalid Response**: Log error, continue to next page
-- **Socket Error**: Reinitialize socket, retry
-- **Export Failure**: Log error, continue (don't fail session)
-- **rake_id = 0**: Exit dengan error jika tidak ada user override
+| Skenario | Aksi |
+|---|---|
+| Ping gagal | Log, sleep loop_interval, retry |
+| Handshake gagal | `SessionResult.success=False`, log, loop |
+| Checksum invalid | Discard packet, retry per page |
+| Export CSV/PDF gagal | Log error, lanjut (tidak gagalkan sesi) |
+| Upload JSON gagal | Retry max UPLOAD_MAX_RETRIES, lalu leave di raw/ |
+| Upload CSV/PDF gagal | Log warning, lanjut (JSON sudah terkirim) |
+| Signal SIGINT/SIGTERM | `_shutdown=True`, selesaikan loop, exit |
 
 ## 6. Output Specifications
 
@@ -408,26 +444,63 @@ Jalankan dengan `LOG_LEVEL=DEBUG` untuk output per-record:
 ### 10.1 Environment Variables
 
 ```bash
+# ── Koneksi TIS ──────────────────────────────────
 TIS_HOST=192.168.1.100
 TIS_PORT=262
 LOCAL_PORT=263
+
+# ── Output ──────────────────────────────────────
 OUTPUT_DIR=/data/tis_output
+
+# ── Cloud API ────────────────────────────────────
 CLOUD_API_URL=https://api.mrtjkt.com/tis
 TIS_API_KEY=secret-key-here
+CLOUD_ENABLED=true
+
+# ── Daemon ───────────────────────────────────────
+TIS_INTERVAL_READ_DATA=4320      # menit (4320 = 3 hari)
+MAX_SESSION_RAW=50               # max folder di output/raw/
+MAX_SESSION_SENT=200             # max folder di output/sent-cloud/
+LOOP_INTERVAL_SEC=10             # delay antar iterasi loop (detik)
+UPLOAD_MAX_RETRIES=5             # max retry upload per sesi
+
+# ── Logging ──────────────────────────────────────
 LOG_LEVEL=INFO
 ```
 
 ### 10.2 Operasional Harian
 
 ```bash
-# Normal — rake_id auto-detect dari TIS
+# Mode daemon (default)
 python main.py
 
-# Jika auto-detect gagal
-python main.py --rake-id 5
+# One-shot (seperti versi lama)
+python main.py --once
+
+# One-shot dengan override rake_id
+python main.py --rake-id 5 --once
 
 # Debug full
-LOG_LEVEL=DEBUG python main.py --raw
+LOG_LEVEL=DEBUG python main.py
+```
+
+### 10.3 Output Structure
+
+```
+output/
+├── .last_read_timestamp          # persistensi interval
+├── raw/                          # sesi yang belum terkirim ke cloud
+│   ├── 20260614-143021_rake05/
+│   │   ├── records_260614_143021_rake05.json
+│   │   ├── D260614_TS05_143021.csv
+│   │   └── D260614_TS05_143021.pdf
+│   └── ...
+└── sent-cloud/                   # sesi yang sudah terkirim
+    ├── 20260614-143021_rake05/
+    │   ├── records_260614_143021_rake05.json
+    │   ├── D260614_TS05_143021.csv
+    │   └── D260614_TS05_143021.pdf
+    └── ...
 ```
 
 ---

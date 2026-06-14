@@ -53,7 +53,8 @@ tis_gateway/
 │
 ├── exporter/
 │   ├── csv_exporter.py      # Export CSV (format identik PTU Sumitomo)
-│   └── pdf_exporter.py      # Export PDF tabular
+│   ├── pdf_exporter.py      # Export PDF tabular
+│   └── json_exporter.py     # Export JSON (source of truth untuk upload)
 │
 ├── uploader/
 │   └── cloud_uploader.py    # HTTP POST ke Laravel API (JSON + multipart)
@@ -121,19 +122,37 @@ php artisan serve   # berjalan di http://127.0.0.1:8000
 
 ### Kontrol Upload
 
-Upload ke CMS dikontrol lewat dua cara (keduanya bisa dipakai bersamaan):
+### Mode Daemon (Default)
 
-| Cara | Kapan dipakai |
-|---|---|
-| `CLOUD_ENABLED=true` di `.env` | Default on/off per environment (development vs produksi) |
-| Flag `--upload` saat runtime | Override sesaat tanpa ubah `.env` |
+```
+python main.py
+```
 
-Upload aktif jika **salah satu** bernilai true. Untuk nonaktifkan sementara saat `.env` sudah set `CLOUD_ENABLED=true`, hapus atau ubah nilainya ke `false`.
+Gateway berjalan terus-menerus sebagai daemon:
+
+1. **Ping TIS host** — jika unreachable, retry setiap `LOOP_INTERVAL_SEC` detik
+2. **Retry pending sessions** — coba upload ulang folder di `output/raw/` yang gagal sebelumnya
+3. **Cek interval** — jika sejak download terakhir belum melewati `TIS_INTERVAL_READ_DATA`, skip download
+4. **Download + Generate** — download data TIS, simpan JSON + CSV + PDF ke `output/raw/{timestamp}_rake{id}/`
+5. **Upload** — kirim JSON ke cloud (source of truth), lalu CSV/PDF
+6. **Move** — jika upload berhasil, pindahkan folder ke `output/sent-cloud/`
+7. **Prune** — hapus folder terlama jika melebihi `MAX_SESSION_RAW` atau `MAX_SESSION_SENT`
+8. **Sleep** — tunggu `LOOP_INTERVAL_SEC` detik, ulangi dari langkah 1
+
+Hentikan dengan `Ctrl+C` (graceful shutdown).
+
+### Mode One-Shot (Legacy)
+
+```bash
+python main.py --once
+python main.py --rake-id 5 --once    # dengan override rake_id
+```
 
 ### Command Line Options
 
 | Opsi | Tipe | Default | Keterangan |
 |---|---|---|---|
+| `--once` | flag | — | One-shot mode (tidak loop) |
 | `--rake-id` | int | auto-detect | Override nomor formasi kereta |
 | `--host` | str | dari `.env` | IP TIS (CCU/MON) |
 | `--port` | int | `262` | Port TIS |
@@ -146,29 +165,33 @@ Upload aktif jika **salah satu** bernilai true. Untuk nonaktifkan sementara saat
 
 ### Contoh Penggunaan
 
-**Setup `.env` development (upload aktif secara default):**
-
-```env
-TIS_HOST=192.168.1.1
-CLOUD_API_URL=http://127.0.0.1:8000
-CLOUD_ENABLED=true
-LOG_LEVEL=DEBUG
-```
-
 | Skenario | Perintah |
 |---|---|
-| Normal — colok LAN ke TIS, jalankan | `python main.py` |
-| Rake ID tidak terdeteksi otomatis | `python main.py --rake-id 5` |
+| Daemon — colok LAN ke TIS, biarkan jalan | `python main.py` |
+| One-shot dengan override rake_id | `python main.py --rake-id 5 --once` |
 | Override IP TIS sementara | `python main.py --host 192.168.1.100` |
 | Hanya export lokal, tanpa upload | Set `CLOUD_ENABLED=false` di `.env` |
-| Upload sesaat tanpa ubah `.env` | `python main.py --upload` |
-| Hanya CSV, skip PDF | `python main.py --no-pdf` |
-| Debug raw bytes per record | `python main.py --raw` |
 | Test dengan mock TIS server | `python tests/mock_tis.py` lalu `python main.py --host 127.0.0.1` |
 
 ---
 
-## Alur Eksekusi
+## Alur Eksekusi (Daemon Loop)
+
+```
+Loop utama (setiap LOOP_INTERVAL_SEC detik)
+│
+├── 0. Ping TIS host ──── gagal ──→ sleep, retry
+├── 0b. Retry pending sessions di output/raw/
+├── 1. Cek interval ──── masih ≤ TIS_INTERVAL_READ_DATA ──→ sleep, skip download
+├── 2. Download TIS (handshake → metadata → failure records)
+├── 3. Generate files (JSON + CSV + PDF) → output/raw/{timestamp}_rake{id}/
+├── 4. Upload ke cloud ──── sukses ──→ move ke output/sent-cloud/
+│                           └── gagal ──→ tetap di raw/, retry di loop berikutnya
+├── 5. Prune (MAX_SESSION_RAW / MAX_SESSION_SENT)
+└── 6. Sleep
+```
+
+### Fase Download Detail
 
 | Fase | Perintah TIS | Halaman | Keterangan |
 |---|---|---|---|
@@ -176,16 +199,27 @@ LOG_LEVEL=DEBUG
 | 2. Metadata | CMD `0x32` | 6 | Download metadata sesi |
 | 3. Dataset B | CMD `0x34` | 6 | Download dataset tambahan |
 | 4. Failure records | CMD `0x36` | 40 × 3 poll | Download 200 failure records (5 record/page) |
-| 5. Export | — | — | Generate CSV dan/atau PDF ke `./output/` |
-| 6. Upload | HTTP POST | — | Kirim JSON + file ke Laravel jika `CLOUD_ENABLED=true` atau `--upload` |
+| 5. Export | — | — | Generate JSON + CSV + PDF ke folder sesi di `output/raw/` |
+| 6. Upload | HTTP POST | — | Kirim JSON (source of truth) + CSV/PDF ke Laravel |
 
-### Nama File Output
+### Struktur Output
 
-| Format | Contoh |
-|---|---|
-| CSV | `D260507_005.csv` |
-| PDF | `D260507_005.pdf` |
-| RAW (debug) | `D260507_005.bin` |
+```
+output/
+├── .last_read_timestamp
+├── raw/
+│   ├── 20260614-143021_rake05/
+│   │   ├── records_260614_143021_rake05.json
+│   │   ├── D260614_TS05_143021.csv
+│   │   └── D260614_TS05_143021.pdf
+│   └── ...
+└── sent-cloud/
+    ├── 20260614-143021_rake05/
+    │   ├── records_260614_143021_rake05.json
+    │   ├── D260614_TS05_143021.csv
+    │   └── D260614_TS05_143021.pdf
+    └── ...
+```
 
 ---
 
@@ -258,13 +292,16 @@ Dashboard di `/failures` menampilkan:
 ## Troubleshooting
 
 | Error | Penyebab | Solusi |
-|---|---|---|
+|---|---|---|---|
 | `rake_id tidak diketahui` | TIS tidak kirim nomor formasi di handshake | Tambah `--rake-id <nomor>` |
-| `Connection refused / No response` | IP TIS salah atau firewall | Cek `TIS_HOST` di `.env`, pastikan port 262 terbuka |
+| `TIS unreachable` (berulang di log) | Kabel LAN lepas, TIS mati, atau IP salah | Cek kabel, pastikan `TIS_HOST` di `.env` benar |
+| `Download gagal: ... tidak ada response` | Host reachable tapi port 262 tidak terbuka | Cek firewall, pastikan TIS sudah ON |
 | `No module named 'parsers'` | Python path tidak benar | Jalankan dari root project: `cd tis_gateway && python main.py` |
 | `reportlab not found` | Dependency belum install | `pip install -r requirements.txt` |
 | `HTTP 401 dari CMS` | API key tidak cocok | Samakan `TIS_API_KEY` di `.env` dengan config Laravel |
 | `HTTP 422 dari CMS` | Payload tidak valid | Cek log Laravel: `php artisan log:show` |
+| Upload gagal, session tetap di `raw/` | Cloud API tidak reachable atau error | Perbaiki koneksi cloud, sesi akan di-retry otomatis |
+| `raw/` penuh, folder lama terhapus | `MAX_SESSION_RAW` tercapai | Naikkan `MAX_SESSION_RAW` di `.env`, atau perbaiki upload |
 | Laravel tidak jalan | Server belum distart | `cd tis_api_laravel && php artisan serve` |
 
 ---

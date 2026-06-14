@@ -21,17 +21,58 @@
                 <input wire:model.live.debounce.300ms="search" type="text" placeholder="Search session id / rake / file name..." class="w-full rounded-lg border border-zinc-200 bg-zinc-50 py-2 pl-9 pr-4 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100 dark:placeholder-zinc-400">
             </div>
 
-            <div class="min-w-[160px]">
-                <input wire:model.live="from" type="date" class="w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100">
+            <div
+                class="flex flex-wrap items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 shadow-sm dark:border-zinc-700 dark:bg-zinc-800"
+                x-data="{
+                    fp: null,
+                    dateFrom: '',
+                    dateTo: '',
+                    init() {
+                        this.fp = flatpickr(this.$refs.picker, {
+                            mode: 'range',
+                            dateFormat: 'Y-m-d',
+                            locale: { rangeSeparator: ' → ' },
+                            onChange: (dates) => {
+                                const fmt = d => {
+                                    const y = d.getFullYear();
+                                    const m = String(d.getMonth()+1).padStart(2,'0');
+                                    const day = String(d.getDate()).padStart(2,'0');
+                                    return y+'-'+m+'-'+day;
+                                };
+                                this.dateFrom = dates.length >= 1 ? fmt(dates[0]) : '';
+                                this.dateTo   = dates.length >= 2 ? fmt(dates[dates.length-1]) : this.dateFrom;
+                            }
+                        });
+                    },
+                    apply() { $wire.call('applyFilter', this.dateFrom, this.dateTo); },
+                    reset() {
+                        this.fp.clear();
+                        this.dateFrom = '';
+                        this.dateTo = '';
+                        $wire.call('resetFilter');
+                    }
+                }"
+            >
+                <svg class="h-4 w-4 flex-shrink-0 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                <input
+                    x-ref="picker"
+                    type="text"
+                    readonly
+                    placeholder="Select date range..."
+                    class="flex-1 min-w-[200px] bg-transparent text-sm text-zinc-700 placeholder-zinc-400 focus:outline-none cursor-pointer dark:text-zinc-200 dark:placeholder-zinc-500"
+                >
+                <button @click="apply()" class="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 transition-colors">
+                    <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/>
+                    </svg>
+                    Apply
+                </button>
+                <button @click="reset()" class="inline-flex items-center rounded-lg border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-50 transition-colors dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-700">
+                    Reset
+                </button>
             </div>
-
-            <div class="min-w-[160px]">
-                <input wire:model.live="to" type="date" class="w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100">
-            </div>
-
-            <button wire:click="clearFilters" class="inline-flex items-center rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-700">
-                Reset
-            </button>
         </div>
 
         <div class="overflow-x-auto">
@@ -84,7 +125,7 @@
                     @empty
                     <tr>
                         <td colspan="5" class="px-5 py-12 text-center text-sm text-zinc-400">
-                            @if($search || $from || $to)
+                            @if($search || $dateFrom || $dateTo)
                             No matching sessions.
                             @else
                             No session uploads yet.

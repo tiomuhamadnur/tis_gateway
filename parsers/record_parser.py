@@ -110,6 +110,31 @@ class FailureRecord:
     def timestamp_str(self) -> str:
         return self.timestamp.strftime("%d/%m/%y %H:%M:%S")
 
+    @classmethod
+    def from_dict(cls, d: dict) -> "FailureRecord":
+        ts = d.get("timestamp", datetime.now().isoformat())
+        if isinstance(ts, str):
+            ts = datetime.fromisoformat(ts)
+        tid = d.get("train_id", "FFFF")
+        if isinstance(tid, str):
+            tid = 0xFFFF if tid == "FFFF" else int(tid)
+        return cls(
+            block_no=d.get("block_no", 0),
+            timestamp=ts,
+            car_no=d.get("car_no", 0),
+            occur_recover=d.get("occur_recover", 0),
+            train_id=tid,
+            location_m=d.get("location_m", 0),
+            equipment_code=d.get("equipment_code", 0),
+            fault_sub=d.get("fault_sub", 0),
+            fault_code=d.get("fault_code", 0),
+            status_byte=d.get("status_byte", 0),
+            notch_step=d.get("notch_step", 0),
+            notch_mode=d.get("notch_mode", 0),
+            speed_kmh=d.get("speed_kmh", 0),
+            overhead_v=d.get("overhead_v", 0),
+        )
+
     def to_dict(self) -> dict:
         return {
             "block_no":       self.block_no,
@@ -119,9 +144,13 @@ class FailureRecord:
             "train_id":       self.train_id_str,
             "location_m":     self.location_m,
             "equipment_code": self.equipment_code,
+            "fault_sub":      self.fault_sub,
             "equipment_name": self.equipment_name,
             "fault_code":     self.fault_code,
             "fault_name":     self.fault_name,
+            "status_byte":    self.status_byte,
+            "notch_step":     self.notch_step,
+            "notch_mode":     self.notch_mode,
             "notch":          self.notch_label,
             "speed_kmh":      self.speed_kmh,
             "overhead_v":     self.overhead_v,

@@ -23,7 +23,7 @@
 
     {{-- Filters --}}
     <div class="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
-        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <div>
                 <label class="mb-1.5 block text-xs font-medium text-zinc-600 dark:text-zinc-400">Trainset ID</label>
                 <input id="filter-rake" type="text" placeholder="Filter trainset..." class="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100">
@@ -38,12 +38,10 @@
                 </select>
             </div>
             <div>
-                <label class="mb-1.5 block text-xs font-medium text-zinc-600 dark:text-zinc-400">Occurred Dari</label>
-                <input id="filter-from" type="date" class="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100">
-            </div>
-            <div>
-                <label class="mb-1.5 block text-xs font-medium text-zinc-600 dark:text-zinc-400">Occurred Sampai</label>
-                <input id="filter-to" type="date" class="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100">
+                <label class="mb-1.5 block text-xs font-medium text-zinc-600 dark:text-zinc-400">Date Range</label>
+                <div class="relative">
+                    <input id="filter-date" type="text" readonly placeholder="Select date range..." class="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100 cursor-pointer">
+                </div>
             </div>
         </div>
         <div class="mt-3 flex flex-wrap gap-2">
@@ -84,6 +82,7 @@
 <script>
 (function() {
     let table = null;
+    let datePicker = null;
 
     function fmtDatetime(d) {
         if (!d) return '-';
@@ -104,13 +103,30 @@
         <th class="whitespace-nowrap">Fault</th><th class="whitespace-nowrap">Fault Code</th><th class="whitespace-nowrap">Classification</th><th class="whitespace-nowrap">Notch</th>
     </tr></thead>`;
 
+    function getDateRange() {
+        if (!datePicker || !datePicker.selectedDates || datePicker.selectedDates.length === 0) {
+            return { from: '', to: '' };
+        }
+        const fmt = d => {
+            const y = d.getFullYear();
+            const m = String(d.getMonth()+1).padStart(2,'0');
+            const day = String(d.getDate()).padStart(2,'0');
+            return y+'-'+m+'-'+day;
+        };
+        return {
+            from: fmt(datePicker.selectedDates[0]),
+            to: datePicker.selectedDates.length >= 2 ? fmt(datePicker.selectedDates[datePicker.selectedDates.length-1]) : fmt(datePicker.selectedDates[0]),
+        };
+    }
+
     function buildUrl(filters) {
         let url = '{{ route("failures.data") }}';
         let params = new URLSearchParams();
+        const dr = getDateRange();
         if (filters.rake_id)        params.append('rake_id', filters.rake_id);
         if (filters.classification) params.append('classification', filters.classification);
-        if (filters.from)           params.append('from', filters.from);
-        if (filters.to)             params.append('to', filters.to);
+        if (dr.from)                params.append('from', dr.from);
+        if (dr.to)                  params.append('to', dr.to);
         return url + (params.toString() ? '?' + params.toString() : '');
     }
 
@@ -184,21 +200,25 @@
     }
 
     function setup() {
+        datePicker = flatpickr(document.getElementById('filter-date'), {
+            mode: 'range',
+            dateFormat: 'Y-m-d',
+            locale: { rangeSeparator: ' → ' },
+        });
+
         initTable();
 
         document.getElementById('btn-filter').addEventListener('click', function() {
             initTable({
                 rake_id:        document.getElementById('filter-rake').value,
                 classification: document.getElementById('filter-class').value,
-                from:           document.getElementById('filter-from').value,
-                to:             document.getElementById('filter-to').value,
             });
         });
 
         document.getElementById('btn-reset').addEventListener('click', function() {
-            ['filter-rake','filter-class','filter-from','filter-to'].forEach(id => {
-                document.getElementById(id).value = '';
-            });
+            document.getElementById('filter-rake').value = '';
+            document.getElementById('filter-class').value = '';
+            datePicker.clear();
             initTable();
         });
     }
