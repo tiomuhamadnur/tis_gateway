@@ -47,7 +47,7 @@
                                 </svg>
                             </div>
                             <div>
-                                <p class="text-sm font-medium text-zinc-200">Real-time monitoring</p>
+                                <p class="text-sm font-medium text-blue-400">Real-time monitoring</p>
                                 <p class="text-xs text-zinc-300">Fault telemetry and analytics dashboard</p>
                             </div>
                         </div>
@@ -58,7 +58,7 @@
                                 </svg>
                             </div>
                             <div>
-                                <p class="text-sm font-medium text-zinc-200">Session export</p>
+                                <p class="text-sm font-medium text-blue-400">Session export</p>
                                 <p class="text-xs text-zinc-300">Excel and PDF report generation</p>
                             </div>
                         </div>
@@ -69,7 +69,7 @@
                                 </svg>
                             </div>
                             <div>
-                                <p class="text-sm font-medium text-zinc-200">API integration</p>
+                                <p class="text-sm font-medium text-blue-400">API integration</p>
                                 <p class="text-xs text-zinc-300">REST gateway for onboard data flow</p>
                             </div>
                         </div>
