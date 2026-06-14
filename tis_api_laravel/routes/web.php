@@ -33,6 +33,9 @@ Route::middleware(['auth'])->group(function () {
     Route::view('session-downloads', 'session-downloads')
         ->name('sessions.download.index')
         ->middleware('can:view failures');
+    Route::get('session-downloads/data', [App\Http\Controllers\SessionTableController::class, 'getData'])
+        ->name('sessions.data')
+        ->middleware('can:view failures');
     Route::get('session-downloads/{sessionId}/csv', [App\Http\Controllers\SessionDownloadController::class, 'downloadCsv'])
         ->name('sessions.download.csv')
         ->middleware('can:view failures');

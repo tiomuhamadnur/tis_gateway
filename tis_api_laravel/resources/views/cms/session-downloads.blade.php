@@ -12,133 +12,152 @@
     </div>
     @endif
 
-    <div class="rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
-        <div class="flex flex-wrap items-center gap-3 border-b border-zinc-200 px-5 py-4 dark:border-zinc-700">
-            <div class="relative flex-1 min-w-[240px]">
-                <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                </svg>
-                <input wire:model.live.debounce.300ms="search" type="text" placeholder="Search session id / rake / file name..." class="w-full rounded-lg border border-zinc-200 bg-zinc-50 py-2 pl-9 pr-4 text-sm focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100 dark:placeholder-zinc-400">
+    <div class="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+                <label class="mb-1.5 block text-xs font-medium text-zinc-600 dark:text-zinc-400">Search</label>
+                <input id="filter-search" type="text" placeholder="Session id / rake / file name..." class="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100">
             </div>
-
-            <div
-                class="flex flex-wrap items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 shadow-sm dark:border-zinc-700 dark:bg-zinc-800"
-                x-data="{
-                    fp: null,
-                    dateFrom: '',
-                    dateTo: '',
-                    init() {
-                        this.fp = flatpickr(this.$refs.picker, {
-                            mode: 'range',
-                            dateFormat: 'Y-m-d',
-                            locale: { rangeSeparator: ' → ' },
-                            onChange: (dates) => {
-                                const fmt = d => {
-                                    const y = d.getFullYear();
-                                    const m = String(d.getMonth()+1).padStart(2,'0');
-                                    const day = String(d.getDate()).padStart(2,'0');
-                                    return y+'-'+m+'-'+day;
-                                };
-                                this.dateFrom = dates.length >= 1 ? fmt(dates[0]) : '';
-                                this.dateTo   = dates.length >= 2 ? fmt(dates[dates.length-1]) : this.dateFrom;
-                            }
-                        });
-                    },
-                    apply() { $wire.call('applyFilter', this.dateFrom, this.dateTo); },
-                    reset() {
-                        this.fp.clear();
-                        this.dateFrom = '';
-                        this.dateTo = '';
-                        $wire.call('resetFilter');
-                    }
-                }"
-            >
-                <svg class="h-4 w-4 flex-shrink-0 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                </svg>
-                <input
-                    x-ref="picker"
-                    type="text"
-                    readonly
-                    placeholder="Select date range..."
-                    class="flex-1 min-w-[200px] bg-transparent text-sm text-zinc-700 placeholder-zinc-400 focus:outline-none cursor-pointer dark:text-zinc-200 dark:placeholder-zinc-500"
-                >
-                <button @click="apply()" class="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 transition-colors">
-                    <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/>
-                    </svg>
-                    Apply
-                </button>
-                <button @click="reset()" class="inline-flex items-center rounded-lg border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-50 transition-colors dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-700">
-                    Reset
-                </button>
+            <div>
+                <label class="mb-1.5 block text-xs font-medium text-zinc-600 dark:text-zinc-400">Date Range</label>
+                <input id="filter-date" type="text" readonly placeholder="Select date range..." class="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100 cursor-pointer">
             </div>
         </div>
+        <div class="mt-3 flex flex-wrap gap-2">
+            <button id="btn-filter" class="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700">
+                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/></svg>
+                Apply Filter
+            </button>
+            <button id="btn-reset" class="inline-flex items-center gap-1.5 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200">
+                Reset
+            </button>
+        </div>
+    </div>
 
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-zinc-200 dark:divide-zinc-700">
-                <thead class="bg-zinc-50 dark:bg-zinc-900/50">
+    <div class="rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
+        <div class="overflow-x-auto p-2">
+            <table id="sessions-table" class="w-full table-compact text-zinc-700 dark:text-zinc-200" style="width:100%">
+                <thead class="bg-zinc-50 text-[10px] uppercase tracking-[0.18em] text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
                     <tr>
-                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">Session Date</th>
-                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">Session Name</th>
-                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">Trainset</th>
-                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">Files</th>
-                        <th class="px-5 py-3 text-right text-xs font-medium uppercase tracking-wider text-zinc-500">Actions</th>
+                        <th>Session Date</th>
+                        <th>Session Name</th>
+                        <th>Trainset</th>
+                        <th>Files</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-zinc-200 bg-white dark:divide-zinc-700 dark:bg-zinc-800">
-                    @forelse($sessions as $session)
-                    @php
-                        $csvFile = $session->uploadedFiles->first(fn ($file) => strtolower(pathinfo($file->original_filename, PATHINFO_EXTENSION)) === 'csv');
-                        $pdfFile = $session->uploadedFiles->first(fn ($file) => strtolower(pathinfo($file->original_filename, PATHINFO_EXTENSION)) === 'pdf');
-                    @endphp
-                    <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-700/50">
-                        <td class="px-5 py-3 text-sm text-zinc-600 dark:text-zinc-300">
-                            {{ $session->read_time?->format('d M Y H:i:s') ?? '-' }}
-                        </td>
-                        <td class="px-5 py-3">
-                            <div class="flex flex-col">
-                                <span class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $session->session_id }}</span>
-                                <span class="text-xs text-zinc-500 dark:text-zinc-400">{{ $session->uploaded_files_count }} file</span>
-                            </div>
-                        </td>
-                        <td class="px-5 py-3 text-sm text-zinc-600 dark:text-zinc-300">
-                            TS-{{ str_pad((int) $session->rake_id, 2, '0', STR_PAD_LEFT) }}
-                        </td>
-                        <td class="px-5 py-3 text-sm text-zinc-600 dark:text-zinc-300">
-                            <div class="space-y-1">
-                                <div>CSV: {{ $csvFile?->original_filename ?? '-' }}</div>
-                                <div>PDF: {{ $pdfFile?->original_filename ?? '-' }}</div>
-                            </div>
-                        </td>
-                        <td class="px-5 py-3 text-right text-sm">
-                            <div class="inline-flex flex-wrap justify-end gap-2">
-                                <a href="{{ route('sessions.download.csv', $session->session_id) }}" class="inline-flex items-center rounded-md border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 dark:border-green-800 dark:bg-green-900/20 dark:text-green-400">
-                                    CSV
-                                </a>
-                                <a href="{{ route('sessions.download.pdf', $session->session_id) }}" class="inline-flex items-center rounded-md border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
-                                    PDF
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="5" class="px-5 py-12 text-center text-sm text-zinc-400">
-                            @if($search || $dateFrom || $dateTo)
-                            No matching sessions.
-                            @else
-                            No session uploads yet.
-                            @endif
-                        </td>
-                    </tr>
-                    @endforelse
-                </tbody>
             </table>
-        </div>
-
-        <div class="border-t border-zinc-200 px-5 py-4 dark:border-zinc-700">
-            {{ $sessions->links() }}
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+(function() {
+    let table = null;
+    let datePicker = null;
+
+    const theadHtml = `<thead><tr>
+        <th class="whitespace-nowrap">Session Date</th>
+        <th class="whitespace-nowrap">Session Name</th>
+        <th class="whitespace-nowrap">Trainset</th>
+        <th class="whitespace-nowrap">Files</th>
+        <th class="whitespace-nowrap">Actions</th>
+    </tr></thead>`;
+
+    function getDateRange() {
+        if (!datePicker || !datePicker.selectedDates || datePicker.selectedDates.length === 0) {
+            return { from: '', to: '' };
+        }
+        const fmt = d => {
+            const y = d.getFullYear();
+            const m = String(d.getMonth()+1).padStart(2,'0');
+            const day = String(d.getDate()).padStart(2,'0');
+            return y+'-'+m+'-'+day;
+        };
+        return {
+            from: fmt(datePicker.selectedDates[0]),
+            to: datePicker.selectedDates.length >= 2 ? fmt(datePicker.selectedDates[datePicker.selectedDates.length-1]) : fmt(datePicker.selectedDates[0]),
+        };
+    }
+
+    function buildUrl() {
+        let url = '{{ route("sessions.data") }}';
+        let params = new URLSearchParams();
+        const search = document.getElementById('filter-search').value;
+        const dr = getDateRange();
+        if (search)                 params.append('q', search);
+        if (dr.from)                params.append('from', dr.from);
+        if (dr.to)                  params.append('to', dr.to);
+        return url + (params.toString() ? '?' + params.toString() : '');
+    }
+
+    function initTable() {
+        if (table) {
+            table.destroy();
+            $('#sessions-table').empty().append(theadHtml);
+        }
+
+        table = $('#sessions-table').DataTable({
+            processing: true,
+            serverSide: true,
+            autoWidth: false,
+            responsive: true,
+            ajax: { url: buildUrl() },
+            columns: [
+                { data: 'session_date', name: 'read_time' },
+                {
+                    data: null, name: 'session_id', orderable: true,
+                    render: function(data) {
+                        return '<div class="flex flex-col">' +
+                            '<span class="text-sm font-medium text-zinc-900 dark:text-zinc-100">' + data.session_id + '</span>' +
+                            '<span class="text-xs text-zinc-500 dark:text-zinc-400">' + data.file_count_label + '</span>' +
+                            '</div>';
+                    }
+                },
+                { data: 'trainset', name: 'rake_id' },
+                { data: 'files', name: 'files', orderable: false },
+                { data: 'actions', name: 'actions', orderable: false, className: 'text-right' },
+            ],
+            language: {
+                processing: 'Loading data...',
+                emptyTable: 'No session uploads yet.',
+                zeroRecords: 'No matching sessions.',
+                lengthMenu: 'Show _MENU_ records',
+                info: 'Showing _START_ to _END_ of _TOTAL_ records',
+                search: 'Search:',
+                paginate: { previous: '\u2039', next: '\u203a' },
+            },
+            pageLength: 15,
+            order: [[0, 'desc']],
+        });
+    }
+
+    function setup() {
+        datePicker = flatpickr(document.getElementById('filter-date'), {
+            mode: 'range',
+            dateFormat: 'Y-m-d',
+            locale: { rangeSeparator: ' \u2192 ' },
+        });
+
+        initTable();
+
+        document.getElementById('btn-filter').addEventListener('click', function() {
+            initTable();
+        });
+
+        document.getElementById('btn-reset').addEventListener('click', function() {
+            document.getElementById('filter-search').value = '';
+            datePicker.clear();
+            initTable();
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setup);
+    } else {
+        setup();
+    }
+})();
+</script>
+@endpush

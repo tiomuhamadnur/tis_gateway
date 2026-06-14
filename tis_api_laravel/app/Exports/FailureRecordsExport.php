@@ -9,12 +9,31 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 
 class FailureRecordsExport implements FromCollection, WithHeadings, WithMapping
 {
+    protected $filters;
+
+    public function __construct(array $filters = [])
+    {
+        $this->filters = $filters;
+    }
+
     /**
     * @return \Illuminate\Support\Collection
     */
     public function collection()
     {
-        return FailureRecord::with('session')->get();
+        $query = FailureRecord::with('session');
+
+        if (!empty($this->filters['classification'])) {
+            $query->where('classification', ucfirst(strtolower($this->filters['classification'])));
+        }
+        if (!empty($this->filters['from']) && !empty($this->filters['to'])) {
+            $query->whereBetween('timestamp', [$this->filters['from'] . ' 00:00:00', $this->filters['to'] . ' 23:59:59']);
+        }
+        if (!empty($this->filters['rake_id'])) {
+            $query->whereHas('session', fn($q) => $q->where('rake_id', 'like', '%' . $this->filters['rake_id'] . '%'));
+        }
+
+        return $query->get();
     }
 
     public function headings(): array
@@ -24,8 +43,14 @@ class FailureRecordsExport implements FromCollection, WithHeadings, WithMapping
             'Rake ID',
             'Equipment Name',
             'Fault Name',
+            'Fault Description',
+            'Fault Code',
             'Classification',
-            'Description',
+            'Car No',
+            'Speed (km/h)',
+            'Overhead (V)',
+            'Notch',
+            'Duration',
         ];
     }
 
@@ -35,9 +60,15 @@ class FailureRecordsExport implements FromCollection, WithHeadings, WithMapping
             $record->timestamp->format('Y-m-d H:i:s'),
             $record->session->rake_id ?? '',
             $record->equipment_name,
-            $record->fault_name,
+            $record->fault_abbrev,
+            $record->fault_description,
+            $record->fault_code,
             $record->classification,
-            $record->description,
+            $record->car_no,
+            $record->speed_kmh,
+            $record->overhead_v,
+            $record->notch,
+            $record->duration_label,
         ];
     }
 }

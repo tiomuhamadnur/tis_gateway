@@ -2,24 +2,27 @@
     <div class="flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-bold tracking-tight">Failure Records</h1>
-            <p class="text-sm text-zinc-500 dark:text-zinc-400">Data failure records dari semua sesi</p>
+            <p class="text-sm text-zinc-500 dark:text-zinc-400">Data failure records form all sessions</p>
         </div>
         @can('export data')
         <div class="flex gap-2">
-            {{-- <a href="{{ route('sessions.download.index') }}" class="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-400">
-                Session Downloads
-            </a> --}}
-            <a href="{{ route('failures.export.excel') }}" class="inline-flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm font-medium text-green-700 hover:bg-green-100 dark:border-green-800 dark:bg-green-900/20 dark:text-green-400">
+            <button id="btn-export-excel" class="inline-flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm font-medium text-green-700 hover:bg-green-100 dark:border-green-800 dark:bg-green-900/20 dark:text-green-400">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 Excel
-            </a>
-            <a href="{{ route('failures.export.pdf') }}" class="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
+            </button>
+            <button id="btn-export-pdf" class="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
                 PDF
-            </a>
+            </button>
         </div>
         @endcan
     </div>
+
+    @if(session()->has('error'))
+    <div class="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
+        {{ session('error') }}
+    </div>
+    @endif
 
     {{-- Filters --}}
     <div class="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
@@ -31,7 +34,7 @@
             <div>
                 <label class="mb-1.5 block text-xs font-medium text-zinc-600 dark:text-zinc-400">Classification</label>
                 <select id="filter-class" class="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100">
-                    <option value="">Semua</option>
+                    <option value="">All</option>
                     <option value="Heavy">Heavy</option>
                     <option value="Light">Light</option>
                     <option value="Info">Info</option>
@@ -69,6 +72,9 @@
                         <th>Equipment</th>
                         <th>Fault</th>
                         <th>Fault Code</th>
+                        <th>Fault Description</th>
+                        <th>Speed (km/h)</th>
+                        <th>Overhead (V)</th>
                         <th>Classification</th>
                         <th>Notch</th>
                     </tr>
@@ -100,7 +106,9 @@
     const theadHtml = `<thead><tr>
         <th class="whitespace-nowrap">Timestamp</th><th class="whitespace-nowrap">Status</th><th class="whitespace-nowrap">Related Event</th><th class="whitespace-nowrap">Duration</th>
         <th class="whitespace-nowrap">Trainset ID</th><th class="whitespace-nowrap">Car</th><th class="whitespace-nowrap">Equipment</th>
-        <th class="whitespace-nowrap">Fault</th><th class="whitespace-nowrap">Fault Code</th><th class="whitespace-nowrap">Classification</th><th class="whitespace-nowrap">Notch</th>
+        <th class="whitespace-nowrap">Fault</th><th class="whitespace-nowrap">Fault Code</th><th class="whitespace-nowrap">Fault Description</th>
+        <th class="whitespace-nowrap">Speed (km/h)</th><th class="whitespace-nowrap">Overhead (V)</th>
+        <th class="whitespace-nowrap">Classification</th><th class="whitespace-nowrap">Notch</th>
     </tr></thead>`;
 
     function getDateRange() {
@@ -117,6 +125,18 @@
             from: fmt(datePicker.selectedDates[0]),
             to: datePicker.selectedDates.length >= 2 ? fmt(datePicker.selectedDates[datePicker.selectedDates.length-1]) : fmt(datePicker.selectedDates[0]),
         };
+    }
+
+    function getFilterParams() {
+        const params = new URLSearchParams();
+        const rake = document.getElementById('filter-rake').value;
+        const classification = document.getElementById('filter-class').value;
+        const dr = getDateRange();
+        if (rake)              params.append('rake_id', rake);
+        if (classification)    params.append('classification', classification);
+        if (dr.from)           params.append('from', dr.from);
+        if (dr.to)             params.append('to', dr.to);
+        return params;
     }
 
     function buildUrl(filters) {
@@ -176,6 +196,13 @@
                 { data: 'equipment_name', name: 'equipment_name' },
                 { data: 'fault_abbrev', name: 'fault_abbrev' },
                 { data: 'fault_code', name: 'fault_code', className: 'text-center' },
+                { data: 'fault_description', name: 'fault_description' },
+                { data: 'speed_kmh', name: 'speed_kmh', className: 'text-center',
+                    render: function(d) { return d != null ? d + ' km/h' : '-'; }
+                },
+                { data: 'overhead_v', name: 'overhead_v', className: 'text-center',
+                    render: function(d) { return d != null ? d + ' V' : '-'; }
+                },
                 {
                     data: 'classification', name: 'classification',
                     render: function(d) {
@@ -220,6 +247,16 @@
             document.getElementById('filter-class').value = '';
             datePicker.clear();
             initTable();
+        });
+
+        document.getElementById('btn-export-excel').addEventListener('click', function() {
+            const params = getFilterParams();
+            window.location.href = '{{ route("failures.export.excel") }}' + (params.toString() ? '?' + params.toString() : '');
+        });
+
+        document.getElementById('btn-export-pdf').addEventListener('click', function() {
+            const params = getFilterParams();
+            window.location.href = '{{ route("failures.export.pdf") }}' + (params.toString() ? '?' + params.toString() : '');
         });
     }
 

@@ -22,8 +22,14 @@
                 <th>Trainset ID</th>
                 <th>Equipment Name</th>
                 <th>Fault Name</th>
+                <th>Fault Description</th>
+                <th>Fault Code</th>
                 <th>Classification</th>
-                <th>Description</th>
+                <th>Car No</th>
+                <th>Speed (km/h)</th>
+                <th>Overhead (V)</th>
+                <th>Notch</th>
+                <th>Duration</th>
             </tr>
         </thead>
         <tbody>
@@ -32,9 +38,15 @@
                 <td>{{ $record->timestamp->format('Y-m-d H:i:s') }}</td>
                 <td>{{ $record->session->rake_id ?? 'N/A' }}</td>
                 <td>{{ $record->equipment_name }}</td>
-                <td>{{ $record->fault_name }}</td>
+                <td>{{ $record->fault_abbrev }}</td>
+                <td>{{ $record->fault_description }}</td>
+                <td>{{ $record->fault_code }}</td>
                 <td>{{ $record->classification }}</td>
-                <td>{{ $record->description }}</td>
+                <td>{{ $record->car_no }}</td>
+                <td>{{ $record->speed_kmh ?? '-' }}</td>
+                <td>{{ $record->overhead_v ?? '-' }}</td>
+                <td>{{ $record->notch }}</td>
+                <td>{{ $record->duration_label }}</td>
             </tr>
             @endforeach
         </tbody>
