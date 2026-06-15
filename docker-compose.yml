@@ -1,0 +1,12 @@
+services:
+  gateway:
+    build: .
+    container_name: tis-gateway
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./output:/app/output
+      - ./logs:/app/logs
+    network_mode: host
+    init: true
