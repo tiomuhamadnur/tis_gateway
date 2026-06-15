@@ -13,6 +13,7 @@ Penggunaan:
 import argparse
 import logging
 import os
+import platform
 import signal
 import shutil
 import subprocess
@@ -70,14 +71,9 @@ def _check_host_reachable(host: str) -> bool:
     if host in ("127.0.0.1", "localhost", "0.0.0.0"):
         return True
     try:
-        return (
-            subprocess.run(
-                ["ping", "-n", "1", "-w", "2000", host],
-                capture_output=True,
-                timeout=5,
-            ).returncode
-            == 0
-        )
+        is_win = platform.system().lower() == "windows"
+        cmd = ["ping", "-n", "1", "-w", "2000", host] if is_win else ["ping", "-c", "1", "-W", "2", host]
+        return subprocess.run(cmd, capture_output=True, timeout=5).returncode == 0
     except Exception:
         return False
 
