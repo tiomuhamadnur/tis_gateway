@@ -10,3 +10,8 @@ services:
       - ./logs:/app/logs
     network_mode: host
     init: true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
