@@ -43,6 +43,13 @@ Route::middleware(['auth'])->group(function () {
         ->name('sessions.download.pdf')
         ->middleware('can:view failures');
 
+    Route::delete('session-downloads/{id}/delete', [App\Http\Controllers\SessionTableController::class, 'destroy'])
+        ->name('sessions.destroy')
+        ->middleware('can:view failures');
+    Route::delete('session-downloads/orphans/cleanup', [App\Http\Controllers\SessionTableController::class, 'cleanupOrphans'])
+        ->name('sessions.cleanup-orphans')
+        ->middleware('can:view failures');
+
     Route::get('api-docs', function () {
         return view('api-docs');
     })->name('api.docs')->middleware('role:superadmin');
