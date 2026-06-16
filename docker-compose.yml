@@ -3,6 +3,8 @@ services:
     build: .
     container_name: tis-gateway
     restart: unless-stopped
+    environment:
+      - TZ=Asia/Jakarta
     env_file:
       - .env
     volumes:

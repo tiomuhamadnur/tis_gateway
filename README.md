@@ -171,7 +171,8 @@ python main.py --rake-id 5 --once    # dengan override rake_id
 | One-shot dengan override rake_id | `python main.py --rake-id 5 --once` |
 | Override IP TIS sementara | `python main.py --host 192.168.1.100` |
 | Hanya export lokal, tanpa upload | Set `CLOUD_ENABLED=false` di `.env` |
-| Test dengan mock TIS server | `python tests/mock_tis.py` lalu `python main.py --host 127.0.0.1` |
+| Test dengan mock TIS server (lokal) | `python tests/mock_tis.py` lalu `python main.py --host 127.0.0.1` |
+| Test dengan mock TIS server (remote, IP 192.168.1.1) | `python tests/mock_tis.py --host 192.168.1.1` lalu `python main.py --host 192.168.1.1` |
 
 ---
 
@@ -281,7 +282,7 @@ Dashboard di `/failures` menampilkan:
 
 | Script | Keterangan | Perintah |
 |---|---|---|
-| `tests/mock_tis.py` | Simulasi hardware TIS di localhost | `python tests/mock_tis.py` |
+| `tests/mock_tis.py` | Simulasi hardware TIS — default bind `127.0.0.1`. Ganti `--host` untuk remote | `python tests/mock_tis.py` atau `python tests/mock_tis.py --host 192.168.1.1` |
 | `tests/dummy_upload.py` | Kirim N record dummy (CLI) | `python tests/dummy_upload.py --count 50` |
 | `tests/dummy_one_session.py` | 1 sesi, 200 record, 3 hari berbeda | `python tests/dummy_one_session.py --rake-id 5` |
 | `tests/dummy_sessions.py` | 15 sesi multi-trainset | `python tests/dummy_sessions.py` |

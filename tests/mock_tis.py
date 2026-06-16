@@ -4,11 +4,17 @@ tests/mock_tis.py
 Mock TIS server untuk testing gateway TANPA perlu koneksi ke kereta.
 Membalas semua command dengan response yang identik dengan pcap asli.
 
+Default bind address: 127.0.0.1 (localhost).
+Untuk simulasi TIS di IP berbeda (misal laptop terpisah), override dengan --host.
+
 Jalankan di terminal terpisah:
-    python tests/mock_tis.py
+    python tests/mock_tis.py                              # bind 127.0.0.1 (default, lokal)
+    python tests/mock_tis.py --host 192.168.1.1           # bind IP tertentu (remote)
+    python tests/mock_tis.py --host <ip> --port <port>    # custom address
 
 Lalu test gateway:
-    python main.py --host 127.0.0.1 --rake-id 5
+    python main.py --host 127.0.0.1 --rake-id 5   # testing lokal (default mock)
+    python main.py --host 192.168.1.1 --rake-id 5  # mock di laptop IP 192.168.1.1
 """
 
 import socket
@@ -78,11 +84,12 @@ def build_cmd36_response(page: int, seq: int) -> bytes:
 # ─────────────────────────────────────────────
 class MockTISServer:
     def __init__(self, host: str = "127.0.0.1", port: int = 262, client_port: int = 263):
-        self.host        = host
-        self.port        = port
-        self.client_port = client_port
-        self._running    = False
-        self._seq        = 0x60  # sequence counter untuk 0x36 response
+        self.host          = host
+        self.port          = port
+        self.client_port   = client_port
+        self._running      = False
+        self._seq          = 0x60  # sequence counter untuk 0x36 response
+        self._client_addr  = None  # IP gateway, diisi dari packet pertama
 
     def run(self):
         """Jalankan mock server (blocking)."""
@@ -106,10 +113,14 @@ class MockTISServer:
             while self._running:
                 try:
                     data, addr = sock.recvfrom(4096)
+                    if self._client_addr is None:
+                        self._client_addr = addr[0]
                     resp = self._handle(data)
                     if resp:
                         sock.sendto(resp, (addr[0], self.client_port))
                 except socket.timeout:
+                    continue
+                except ConnectionResetError:
                     continue
         except KeyboardInterrupt:
             print("\n[MockTIS] Dihentikan")
@@ -155,15 +166,16 @@ class MockTISServer:
         while self._running:
             time.sleep(10)
             try:
-                sock.sendto(HEARTBEAT, ("127.0.0.1", self.client_port))
+                target = self._client_addr if self._client_addr else "127.0.0.1"
+                sock.sendto(HEARTBEAT, (target, self.client_port))
                 print("[MockTIS] → Heartbeat terkirim")
-            except Exception:
+            except (OSError, ConnectionResetError):
                 pass
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Mock TIS Server untuk testing")
-    parser.add_argument("--host",        default="127.0.0.1", help="Bind address")
+    parser.add_argument("--host",        default="127.0.0.1", help="Bind address (default: 127.0.0.1). Ganti ke IP TIS untuk remote: --host 192.168.1.1")
     parser.add_argument("--port",        type=int, default=262, help="Port TIS (default 262)")
     parser.add_argument("--client-port", type=int, default=263, help="Port client/gateway (default 263)")
     args = parser.parse_args()
