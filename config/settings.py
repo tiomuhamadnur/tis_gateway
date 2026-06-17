@@ -61,11 +61,11 @@ class SessionConfig:
     # Records per page (CMD 0x36)
     records_per_page: int = 5
 
-    # Berapa kali tiap page di-poll sebelum lanjut (dari pcap: 3x)
-    polls_per_page: int = 3
+    # Berapa kali tiap page di-poll sebelum lanjut
+    polls_per_page: int = 2
 
-    # Delay antar poll (detik) — jangan terlalu cepat
-    poll_interval_sec: float = 0.1
+    # Delay antar poll (detik)
+    poll_interval_sec: float = 0.05
 
     # Delay setelah handshake sebelum mulai download
     post_handshake_delay_sec: float = 0.1

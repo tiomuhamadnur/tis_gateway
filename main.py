@@ -199,14 +199,28 @@ def _upload_session(session_dir: str, result: SessionResult) -> bool:
         log.warning("[MAIN] session_id tidak tersedia dari response")
         return True
 
-    # 2. Upload CSV / PDF files
-    for fname in os.listdir(session_dir):
-        if not (fname.endswith(".csv") or fname.endswith(".pdf")):
-            continue
-        fpath = os.path.join(session_dir, fname)
-        ok = uploader.upload_file(fpath, rake_id, session_id)
-        if not ok:
-            log.warning("[MAIN] Upload file %s gagal", fname)
+    # 2. Upload CSV / PDF files secara parallel
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    file_paths = [
+        os.path.join(session_dir, fname)
+        for fname in os.listdir(session_dir)
+        if fname.endswith(".csv") or fname.endswith(".pdf")
+    ]
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = {
+            executor.submit(uploader.upload_file, fpath, rake_id, session_id): fpath
+            for fpath in file_paths
+        }
+        for future in as_completed(futures):
+            fpath = futures[future]
+            try:
+                ok = future.result()
+                if not ok:
+                    log.warning("[MAIN] Upload file %s gagal", os.path.basename(fpath))
+            except Exception as e:
+                log.warning("[MAIN] Upload file %s error: %s", os.path.basename(fpath), e)
 
     return True
 
