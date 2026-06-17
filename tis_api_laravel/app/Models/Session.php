@@ -13,7 +13,6 @@ class Session extends Model
 
     protected $fillable = [
         'session_id',
-        'session_hash',
         'rake_id',
         'read_time',
         'download_date',

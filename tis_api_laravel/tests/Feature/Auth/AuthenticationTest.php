@@ -38,8 +38,11 @@ test('users can not authenticate with invalid password', function () {
 test('users can logout', function () {
     $user = User::factory()->create();
 
-    $response = $this->actingAs($user)->post('/logout');
+    $this->app['auth']->guard('web')->login($user);
+    $this->assertAuthenticated();
 
-    $this->assertGuest();
+    $response = $this->post('/logout', ['_token' => csrf_token()]);
+
     $response->assertRedirect('/');
+    $this->assertGuest();
 });

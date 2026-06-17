@@ -8,7 +8,6 @@ use App\Models\FailureRecord;
 use App\Services\TisEquipmentMap;
 use App\Services\FaultPairingService;
 use Illuminate\Http\Request;
-use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -30,6 +29,10 @@ class FailureController extends Controller
      *     "notch": "EB", "speed_kmh": 0, "overhead_v": 10
      *   }]
      * }
+     *
+     * Session selalu dibuat untuk mencatat setiap upload.
+     * Record duplikat (berdasarkan hash seluruh field TIS) untuk rake yang
+     * sama tidak akan di-insert — validasi unik di level record, bukan session.
      */
     public function store(Request $request)
     {
@@ -52,43 +55,40 @@ class FailureController extends Controller
             'records.*.overhead_v'       => 'required|integer|min:0',
         ]);
 
-        $payloadHash = $this->computeSessionHash(
-            (string) $request->input('rake_id'),
-            $request->input('records', []),
-        );
-
-        // Duplicate detection: same payload hash = same upload content, regardless of read_time
-        $existing = Session::where('session_hash', $payloadHash)->first();
-
-        if ($existing) {
-            return response()->json([
-                'session_id' => $existing->session_id,
-                'received'   => $existing->total_records,
-                'status'     => 'duplicate',
-                'message'    => 'A session with identical content has already been uploaded.',
-            ], 200);
-        }
-
         $sessionId = Str::uuid()->toString();
-
         $records = $request->input('records');
 
-        try {
-            $session = DB::transaction(function () use ($sessionId, $payloadHash, $records, $request) {
+        $session = DB::transaction(function () use ($sessionId, $records, $request) {
             $session = Session::create([
                 'session_id'    => $sessionId,
-                'session_hash'  => $payloadHash,
                 'rake_id'       => (string) $request->input('rake_id'),
                 'read_time'     => $request->input('read_time'),
                 'download_date' => now(),
-                'total_records' => \count($records),
+                'total_records' => 0,
                 'status'        => 'completed',
             ]);
 
+            // Ambil semua record_hash yang sudah ada untuk rake ini
+            $existingHashes = FailureRecord::whereIn('session_id', function ($q) use ($request) {
+                $q->select('id')
+                  ->from('failure_sessions')
+                  ->where('rake_id', (string) $request->input('rake_id'));
+            })->pluck('record_hash')->filter()->values()->toArray();
+
+            $existingHashSet = array_flip($existingHashes);
+
             $inserts = [];
             $now = now()->toDateTimeString();
+            $newCount = 0;
 
             foreach ($records as $rec) {
+                $hash = $this->computeRecordHash($rec);
+
+                if (isset($existingHashSet[$hash])) {
+                    continue;
+                }
+                $existingHashSet[$hash] = true;
+
                 $resolved = TisEquipmentMap::resolveFault(
                     (int) $rec['equipment_code'],
                     (int) $rec['fault_code'],
@@ -98,6 +98,7 @@ class FailureController extends Controller
 
                 $inserts[] = [
                     'session_id'        => $session->id,
+                    'record_hash'       => $hash,
                     'block_no'          => (int) $rec['block_no'],
                     'timestamp'         => $rec['timestamp'],
                     'car_no'            => (int) $rec['car_no'],
@@ -117,26 +118,17 @@ class FailureController extends Controller
                     'created_at'        => $now,
                     'updated_at'        => $now,
                 ];
+                $newCount++;
             }
 
-            FailureRecord::insert($inserts);
+            if (!empty($inserts)) {
+                FailureRecord::insert($inserts);
+            }
+
+            $session->update(['total_records' => $newCount]);
 
             return $session;
-            });
-        } catch (QueryException $exception) {
-            $existing = Session::where('session_hash', $payloadHash)->first();
-
-            if ($existing) {
-                return response()->json([
-                    'session_id' => $existing->session_id,
-                    'received'   => $existing->total_records,
-                    'status'     => 'duplicate',
-                    'message'    => 'A session with identical content has already been uploaded.',
-                ], 200);
-            }
-
-            throw $exception;
-        }
+        });
 
         // Pair Occur ↔ Recover untuk seluruh rake ini (termasuk sesi lama yang belum terpair)
         (new FaultPairingService())->pairForRake((int) $session->rake_id);
@@ -149,39 +141,27 @@ class FailureController extends Controller
     }
 
     /**
-     * Buat hash stabil dari isi upload, supaya retry payload yang sama tidak disimpan dua kali.
+     * Hash untuk satu record TIS — menentukan keunikan data di level record.
      */
-    private function computeSessionHash(string $rakeId, array $records): string
+    private function computeRecordHash(array $record): string
     {
-        $normalized = array_map(function (array $record): array {
-            return [
-                'block_no'          => (int) ($record['block_no'] ?? 0),
-                'timestamp'         => (string) ($record['timestamp'] ?? ''),
-                'car_no'            => (int) ($record['car_no'] ?? 0),
-                'occur_recover'     => (int) ($record['occur_recover'] ?? 0),
-                'train_id'          => (string) ($record['train_id'] ?? ''),
-                'location_m'        => (int) ($record['location_m'] ?? 0),
-                'equipment_code'    => (int) ($record['equipment_code'] ?? 0),
-                'equipment_name'    => (string) ($record['equipment_name'] ?? ''),
-                'fault_code'        => (int) ($record['fault_code'] ?? 0),
-                'fault_name'        => (string) ($record['fault_name'] ?? ''),
-                'notch'             => (string) ($record['notch'] ?? ''),
-                'speed_kmh'         => (int) ($record['speed_kmh'] ?? 0),
-                'overhead_v'        => (int) ($record['overhead_v'] ?? 0),
-            ];
-        }, $records);
+        $normalized = [
+            'block_no'       => (int) ($record['block_no'] ?? 0),
+            'timestamp'      => (string) ($record['timestamp'] ?? ''),
+            'car_no'         => (int) ($record['car_no'] ?? 0),
+            'occur_recover'  => (int) ($record['occur_recover'] ?? 0),
+            'train_id'       => (string) ($record['train_id'] ?? ''),
+            'location_m'     => (int) ($record['location_m'] ?? 0),
+            'equipment_code' => (int) ($record['equipment_code'] ?? 0),
+            'equipment_name' => (string) ($record['equipment_name'] ?? ''),
+            'fault_code'     => (int) ($record['fault_code'] ?? 0),
+            'fault_name'     => (string) ($record['fault_name'] ?? ''),
+            'notch'          => (string) ($record['notch'] ?? ''),
+            'speed_kmh'      => (int) ($record['speed_kmh'] ?? 0),
+            'overhead_v'     => (int) ($record['overhead_v'] ?? 0),
+        ];
 
-        usort($normalized, function (array $left, array $right): int {
-            return strcmp(
-                json_encode($left, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-                json_encode($right, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
-            );
-        });
-
-        return hash('sha256', json_encode([
-            'rake_id' => $rakeId,
-            'records' => $normalized,
-        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        return hash('sha256', json_encode($normalized, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
     }
 
     /**

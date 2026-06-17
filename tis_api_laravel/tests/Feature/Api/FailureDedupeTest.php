@@ -6,7 +6,7 @@ beforeEach(function () {
     config(['app.tis_api_key' => 'test_api_key']);
 });
 
-test('same upload payload is stored once even if read_time changes', function () {
+test('duplicate records across uploads are not re-inserted', function () {
     $records = [
         [
             'block_no' => 1,
@@ -34,7 +34,12 @@ test('same upload payload is stored once even if read_time changes', function ()
     ]);
 
     $first->assertStatus(201);
+    $first->assertJson([
+        'status' => 'success',
+        'received' => 1,
+    ]);
 
+    // Upload kedua: session baru tetap dibuat, tapi record duplikat tidak di-insert
     $second = $this->postJson('/api/failures', [
         'rake_id' => 'TS08',
         'read_time' => '2026-06-12 10:00:15',
@@ -43,10 +48,12 @@ test('same upload payload is stored once even if read_time changes', function ()
         'Authorization' => 'Bearer test_api_key',
     ]);
 
-    $second->assertStatus(200);
+    $second->assertStatus(201);
     $second->assertJson([
-        'status' => 'duplicate',
+        'status' => 'success',
+        'received' => 0, // 0 record baru karena semua duplikat
     ]);
 
-    expect(Session::count())->toBe(1);
+    // Session baru tetap dibuat (2 session total)
+    expect(Session::count())->toBe(2);
 });

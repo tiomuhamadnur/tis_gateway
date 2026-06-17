@@ -7,23 +7,32 @@ beforeEach(function () {
     config(['app.tis_api_key' => 'test_api_key']);
 });
 
+function validRecord(array $overrides = []): array
+{
+    return array_merge([
+        'block_no' => 0,
+        'timestamp' => now()->toDateTimeString(),
+        'car_no' => 1,
+        'occur_recover' => 0,
+        'train_id' => 'TS01',
+        'location_m' => 0,
+        'equipment_code' => 1,
+        'equipment_name' => 'Engine',
+        'fault_code' => 100,
+        'fault_name' => 'OVER',
+        'notch' => 'EB',
+        'speed_kmh' => 0,
+        'overhead_v' => 0,
+    ], $overrides);
+}
+
 test('can submit failure records with valid API key', function () {
     $response = $this->postJson('/api/failures', [
         'rake_id' => 'RAKE-001',
+        'read_time' => now()->toDateTimeString(),
         'records' => [
-            [
-                'timestamp' => now()->toDateTimeString(),
-                'equipment_name' => 'Engine',
-                'fault_name' => 'Overheating',
-                'classification' => 'heavy',
-                'description' => 'Engine temperature exceeded limit',
-            ],
-            [
-                'timestamp' => now()->toDateTimeString(),
-                'equipment_name' => 'Brake System',
-                'fault_name' => 'Pressure Loss',
-                'classification' => 'moderate',
-            ],
+            validRecord(['fault_name' => 'OVER', 'fault_code' => 100]),
+            validRecord(['fault_name' => 'PRESS', 'fault_code' => 200, 'equipment_name' => 'Brake']),
         ],
     ], [
         'Authorization' => 'Bearer test_api_key',
@@ -66,6 +75,7 @@ test('can list failure sessions', function () {
     Session::create([
         'session_id' => 'test-session-123',
         'rake_id' => 'RAKE-001',
+        'read_time' => now(),
         'download_date' => now(),
         'total_records' => 5,
         'status' => 'completed',
@@ -88,6 +98,7 @@ test('can get session detail', function () {
     $session = Session::create([
         'session_id' => 'test-session-456',
         'rake_id' => 'RAKE-002',
+        'read_time' => now(),
         'download_date' => now(),
         'total_records' => 3,
         'status' => 'completed',
@@ -95,10 +106,20 @@ test('can get session detail', function () {
 
     FailureRecord::create([
         'session_id' => $session->id,
+        'block_no' => 1,
         'timestamp' => now(),
+        'car_no' => 1,
+        'occur_recover' => 0,
+        'train_id' => 'TS01',
+        'location_m' => 0,
+        'equipment_code' => 1,
         'equipment_name' => 'Engine',
-        'fault_name' => 'Overheating',
+        'fault_code' => 100,
+        'fault_abbrev' => 'OVER',
         'classification' => 'heavy',
+        'notch' => 'EB',
+        'speed_kmh' => 0,
+        'overhead_v' => 0,
     ]);
 
     $response = $this->getJson('/api/failures/' . $session->session_id, [

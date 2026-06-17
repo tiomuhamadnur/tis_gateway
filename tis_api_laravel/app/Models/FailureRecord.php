@@ -12,6 +12,7 @@ class FailureRecord extends Model
     protected $fillable = [
         'session_id',
         'block_no',
+        'record_hash',
         'timestamp',
         'car_no',
         'occur_recover',

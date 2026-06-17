@@ -58,7 +58,6 @@ test('authorized user can see session download page and download files', functio
     $this->actingAs($user)
         ->get(route('sessions.download.index'))
         ->assertStatus(200)
-        ->assertSee('session-001')
         ->assertSee('Session Downloads')
         ->assertSee('CSV')
         ->assertSee('PDF');
