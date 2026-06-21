@@ -25,6 +25,7 @@ from protocol.commands import (
 from parsers.response_parser import ResponseParser, ParsedPacket, CMD_HEARTBEAT, CMD_FAILURE
 from parsers.record_parser import RecordParser, FailureRecord
 from config.settings import config
+from hardware.status_led import NullStatusIndicator
 from utils.logger import get_logger
 
 log = get_logger(__name__)
@@ -93,11 +94,13 @@ class TISSession:
         host: Optional[str] = None,
         port: Optional[int] = None,
         local_port: Optional[int] = None,
+        indicator=None,
     ):
         self._user_rake_id  = rake_id
         self.host           = host       or config.network.tis_host
         self.port           = port       or config.network.tis_port
         self.local_port     = local_port or config.network.local_port
+        self._indicator     = indicator or NullStatusIndicator()
         self._resp_parser   = ResponseParser()
         self._rec_parser    = RecordParser()
         self._discovered_rake_id: Optional[int] = None
@@ -123,11 +126,13 @@ class TISSession:
         result = SessionResult(rake_id=0)
 
         try:
+            self._indicator.handshake()
             with UDPClient(self.host, self.port, self.local_port) as client:
                 client.drain()
 
                 # Fase 1: Handshake (juga auto-detect rake_id)
                 if not self._do_handshake(client):
+                    self._indicator.error()
                     result.error_msg = "Handshake gagal"
                     result.duration_sec = time.time() - t_start
                     log.error(result.summary_line())
@@ -145,9 +150,11 @@ class TISSession:
                 result.records          = records
                 result.pages_downloaded = pages
                 result.success          = True
+                self._indicator.success()
 
         except Exception as e:
             log.exception("[SESSION_ERROR] %s", e)
+            self._indicator.error()
             result.error_msg = str(e)
 
         result.duration_sec = time.time() - t_start
@@ -157,6 +164,7 @@ class TISSession:
     # ── Fase 1: Handshake ─────────────────────────────────────────
     def _do_handshake(self, client: UDPClient) -> bool:
         log.info("[HS] Kirim handshake CMD 0x20...")
+        self._indicator.handshake()
         resp_bytes = client.send_and_receive(build_handshake())
 
         if not resp_bytes:
@@ -206,6 +214,7 @@ class TISSession:
     # ── Fase 2: CMD 0x32 metadata ─────────────────────────────────
     def _do_metadata_download(self, client: UDPClient):
         log.info("[CMD32] Metadata %d pages...", config.session.cmd32_pages)
+        self._indicator.downloading()
         ok = 0
         for page in range(1, config.session.cmd32_pages + 1):
             resp = client.send_and_receive(build_metadata_request(page))
@@ -219,6 +228,7 @@ class TISSession:
     # ── Fase 3: CMD 0x34 dataset B ────────────────────────────────
     def _do_dataset_b_download(self, client: UDPClient):
         log.info("[CMD34] Dataset B %d pages...", config.session.cmd34_pages)
+        self._indicator.downloading()
         ok = 0
         for page in range(1, config.session.cmd34_pages + 1):
             resp = client.send_and_receive(build_dataset_b_request(page))
@@ -238,8 +248,9 @@ class TISSession:
         records: List[FailureRecord] = []
         pages_ok = 0
 
-        log.info("[CMD36] Failure records %d pages × %d polls...",
+        log.info("[CMD36] Failure records %d pages x %d polls...",
                  cfg.cmd36_pages, cfg.polls_per_page)
+        self._indicator.downloading()
 
         block_no = 0
         for page in range(cfg.cmd36_pages):

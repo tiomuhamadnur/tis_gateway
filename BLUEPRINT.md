@@ -583,3 +583,50 @@ Sisa yang perlu PCAP tambahan:
 - **Database Integration**: Persistent storage untuk trend analysis
 - **Real-time Monitoring**: Continuous polling mode
 - **Multi-rake**: Parallel processing jika ada multiple TIS units
+
+---
+
+## 14. Status LED / GPIO
+
+Gateway bisa memakai modul LED merah-kuning-hijau di Orange Pi atau hardware Linux lain
+untuk status operasional lokal. Fitur ini bersifat opsional dan default-nya off.
+
+### 14.1 Tujuan
+
+- Menunjukkan TIS reachable atau tidak
+- Menunjukkan proses download sedang berjalan
+- Menunjukkan upload cloud sukses atau gagal
+- Menjadi indikator lokal tanpa mengganggu proses gateway
+
+### 14.2 Konfigurasi .env
+
+```env
+LED_ENABLED=false
+GPIO_BACKEND=mock
+GPIO_ACTIVE_LOW=false
+LED_RED_PIN=
+LED_YELLOW_PIN=
+LED_GREEN_PIN=
+LED_BLINK_INTERVAL_SEC=0.5
+LED_SUCCESS_PULSE_SEC=1.5
+LED_ERROR_HOLD_SEC=2.5
+```
+
+### 14.3 Backend GPIO
+
+- `mock`: hanya log status, cocok untuk development di PC/laptop
+- `sysfs`: akses `/sys/class/gpio` pada Linux/Orange Pi
+
+### 14.4 Mapping status yang dipakai
+
+- Hijau solid: idle / normal
+- Kuning blink: handshake, download, upload, retry, atau waiting
+- Merah solid: TIS unreachable
+- Merah blink: cloud unreachable
+- Hijau pulse: sukses sesi atau upload selesai
+
+### 14.5 Prinsip desain
+
+- Jika LED bermasalah, gateway tetap jalan
+- Semua akses GPIO harus lewat feature flag
+- Mapping pin hanya di `.env`, supaya deploy ke hardware berbeda cukup ganti konfigurasi

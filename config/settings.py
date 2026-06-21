@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 import os
 
-# Load .env jika ada (opsional — tidak error jika file tidak ada)
+# Load .env jika ada (opsional - tidak error jika file tidak ada)
 try:
     from dotenv import load_dotenv
     load_dotenv(override=False)  # env OS lebih prioritas
@@ -17,9 +17,9 @@ except ImportError:
     pass  # python-dotenv belum install, skip
 
 
-# ─────────────────────────────────────────────
-# NETWORK — TIS Connection
-# ─────────────────────────────────────────────
+# -----------------------------------------------------------------------------
+# NETWORK - TIS Connection
+# -----------------------------------------------------------------------------
 @dataclass
 class NetworkConfig:
     # IP CCU/MON Unit (TIS)
@@ -44,9 +44,9 @@ class NetworkConfig:
     recv_buffer_size: int = 4096
 
 
-# ─────────────────────────────────────────────
-# SESSION — Download Parameters
-# ─────────────────────────────────────────────
+# -----------------------------------------------------------------------------
+# SESSION - Download Parameters
+# -----------------------------------------------------------------------------
 @dataclass
 class SessionConfig:
     # Jumlah pages untuk CMD 0x32 (metadata)
@@ -75,9 +75,9 @@ class SessionConfig:
         return self.cmd36_pages * self.records_per_page  # 200
 
 
-# ─────────────────────────────────────────────
-# OUTPUT — File Export
-# ─────────────────────────────────────────────
+# -----------------------------------------------------------------------------
+# OUTPUT - File Export
+# -----------------------------------------------------------------------------
 @dataclass
 class OutputConfig:
     # Direktori output default
@@ -103,9 +103,9 @@ class OutputConfig:
     pdf_page_size: str = "A4"
 
 
-# ─────────────────────────────────────────────
-# CLOUD — Upload API
-# ─────────────────────────────────────────────
+# -----------------------------------------------------------------------------
+# CLOUD - Upload API
+# -----------------------------------------------------------------------------
 @dataclass
 class CloudConfig:
     # Upload ke cloud? Set False untuk disable
@@ -120,7 +120,7 @@ class CloudConfig:
     # Endpoint untuk upload file (CSV/PDF)
     endpoint_files: str = "/api/files"
 
-    # API key — sebaiknya diambil dari environment variable
+    # API key - sebaiknya diambil dari environment variable
     api_key: str = field(default_factory=lambda: os.getenv("TIS_API_KEY", "tiomuhamadnur"))
 
     # Timeout HTTP request (detik)
@@ -133,9 +133,34 @@ class CloudConfig:
     upload_format: str = "json"
 
 
-# ─────────────────────────────────────────────
-# DAEMON — Loop & Session Management
-# ─────────────────────────────────────────────
+# -----------------------------------------------------------------------------
+# INDICATOR - Status LED / GPIO
+# -----------------------------------------------------------------------------
+@dataclass
+class IndicatorConfig:
+    # Master switch untuk seluruh LED status.
+    enabled: bool = False
+
+    # Backend GPIO: "mock" | "sysfs"
+    backend: str = "mock"
+
+    # Polarity pin: True jika output aktif-rendah.
+    active_low: bool = False
+
+    # Mapping pin GPIO. None = tidak dipakai.
+    red_pin: Optional[int] = None
+    yellow_pin: Optional[int] = None
+    green_pin: Optional[int] = None
+
+    # Timing visual.
+    blink_interval_sec: float = 0.5
+    success_pulse_sec: float = 1.5
+    error_hold_sec: float = 2.5
+
+
+# -----------------------------------------------------------------------------
+# DAEMON - Loop & Session Management
+# -----------------------------------------------------------------------------
 @dataclass
 class DaemonConfig:
     # Interval antar loop utama (detik)
@@ -155,9 +180,9 @@ class DaemonConfig:
     upload_max_retries: int = 5
 
 
-# ─────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # LOGGING
-# ─────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 @dataclass
 class LogConfig:
     # Level: DEBUG | INFO | WARNING | ERROR
@@ -182,28 +207,33 @@ class LogConfig:
     log_backup_count: int = 5
 
 
-# ─────────────────────────────────────────────
-# MASTER CONFIG — gabungan semua
-# ─────────────────────────────────────────────
+# -----------------------------------------------------------------------------
+# MASTER CONFIG - gabungan semua
+# -----------------------------------------------------------------------------
 @dataclass
 class GatewayConfig:
     network: NetworkConfig = field(default_factory=NetworkConfig)
     session: SessionConfig = field(default_factory=SessionConfig)
-    output: OutputConfig   = field(default_factory=OutputConfig)
-    cloud: CloudConfig     = field(default_factory=CloudConfig)
-    daemon: DaemonConfig   = field(default_factory=DaemonConfig)
-    log: LogConfig         = field(default_factory=LogConfig)
+    output: OutputConfig = field(default_factory=OutputConfig)
+    cloud: CloudConfig = field(default_factory=CloudConfig)
+    indicator: IndicatorConfig = field(default_factory=IndicatorConfig)
+    daemon: DaemonConfig = field(default_factory=DaemonConfig)
+    log: LogConfig = field(default_factory=LogConfig)
 
 
-# Singleton instance — import ini di mana saja
+# Singleton instance - import ini di mana saja
 config = GatewayConfig()
 
 
-# ─────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 # Override dari environment variable (opsional)
-# ─────────────────────────────────────────────
+# -----------------------------------------------------------------------------
 def load_from_env():
     """Override config dari environment variable jika ada."""
+
+    def _as_bool(value: str) -> bool:
+        return value.lower() in ("1", "true", "yes", "on")
+
     val = os.getenv("TIS_HOST")
     if val:
         config.network.tis_host = val
@@ -220,8 +250,35 @@ def load_from_env():
     if val:
         config.cloud.api_base_url = val
     val = os.getenv("CLOUD_ENABLED")
-    if val and val.lower() in ("1", "true", "yes"):
+    if val and _as_bool(val):
         config.cloud.enabled = True
+    val = os.getenv("LED_ENABLED")
+    if val:
+        config.indicator.enabled = _as_bool(val)
+    val = os.getenv("GPIO_BACKEND")
+    if val:
+        config.indicator.backend = val.strip().lower()
+    val = os.getenv("GPIO_ACTIVE_LOW")
+    if val:
+        config.indicator.active_low = _as_bool(val)
+    val = os.getenv("LED_RED_PIN")
+    if val:
+        config.indicator.red_pin = int(val)
+    val = os.getenv("LED_YELLOW_PIN")
+    if val:
+        config.indicator.yellow_pin = int(val)
+    val = os.getenv("LED_GREEN_PIN")
+    if val:
+        config.indicator.green_pin = int(val)
+    val = os.getenv("LED_BLINK_INTERVAL_SEC")
+    if val:
+        config.indicator.blink_interval_sec = float(val)
+    val = os.getenv("LED_SUCCESS_PULSE_SEC")
+    if val:
+        config.indicator.success_pulse_sec = float(val)
+    val = os.getenv("LED_ERROR_HOLD_SEC")
+    if val:
+        config.indicator.error_hold_sec = float(val)
     val = os.getenv("TIS_INTERVAL_READ_DATA")
     if val:
         config.daemon.tis_interval_read_data_minutes = int(val)

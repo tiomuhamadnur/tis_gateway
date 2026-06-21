@@ -2,23 +2,40 @@
 .env
 .env.*
 !.env.example
+!.env.example.*
 
 # Python cache and local test artifacts
 __pycache__/
 *.py[cod]
+.mypy_cache/
 .pytest_cache/
+.ruff_cache/
 .coverage
 htmlcov/
+*.egg-info/
+.eggs/
+
+# Editor / OS files
+.idea/
+.vscode/
+Thumbs.db
+.DS_Store
+*.swp
+*~
 
 # Virtual environments
 .venv/
 venv/
 env/
+python-env/
 
 # Runtime outputs
 /logs
 /output
 *.log
+*.pid
+*.pid.lock
+*.tmp
 
 # Laravel dependencies and build output
 tis_api_laravel/vendor/
@@ -29,3 +46,9 @@ tis_api_laravel/storage/framework/cache/
 tis_api_laravel/storage/framework/sessions/
 tis_api_laravel/storage/framework/views/
 tis_api_laravel/bootstrap/cache/
+
+# Local test / generated artifacts
+logs/
+output/
+dist/
+build/
