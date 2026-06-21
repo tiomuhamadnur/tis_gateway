@@ -3,6 +3,7 @@ services:
     build: .
     container_name: tis-gateway
     restart: unless-stopped
+    privileged: true
     environment:
       - TZ=Asia/Jakarta
     env_file:
@@ -10,6 +11,7 @@ services:
     volumes:
       - ./output:/app/output
       - ./logs:/app/logs
+      - /sys/class/gpio:/sys/class/gpio
     network_mode: host
     init: true
     logging:
